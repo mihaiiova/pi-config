@@ -6,6 +6,12 @@
     "extensions": ["./extensions"],
     "skills": ["./skills"],
     "prompts": ["./prompts"],
-    "themes": ["./themes"]
+    "themes": ["./themes"],
+    "packages": [
+      "npm:pi-mcp-adapter",
+      "npm:pi-subagents",
+      "npm:pi-web-access",
+      "npm:@juicesharp/rpiv-ask-user-question"
+    ]
   }
 }
