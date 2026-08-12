@@ -2,16 +2,22 @@
   "name": "pi-config",
   "private": true,
   "keywords": ["pi-package"],
+  "dependencies": {
+    "@tintinweb/pi-subagents": "^0.15.0",
+    "@zhushanwen/pi-ask-user": "^7.0.5",
+    "pi-mcp-adapter": "^2.23.0",
+    "pi-web-access": "^0.22.0"
+  },
   "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"],
+    "extensions": [
+      "./extensions",
+      "./node_modules/pi-mcp-adapter/index.ts",
+      "./node_modules/pi-web-access/index.ts",
+      "./node_modules/@tintinweb/pi-subagents/src/index.ts",
+      "./node_modules/@zhushanwen/pi-ask-user/index.ts"
+    ],
+    "skills": ["./skills", "./node_modules/pi-mcp-adapter/skills"],
     "prompts": ["./prompts"],
-    "themes": ["./themes"],
-    "packages": [
-      "npm:pi-mcp-adapter",
-      "npm:pi-subagents",
-      "npm:pi-web-access",
-      "npm:@juicesharp/rpiv-ask-user-question"
-    ]
+    "themes": ["./themes"]
   }
 }
