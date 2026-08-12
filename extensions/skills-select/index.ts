@@ -191,19 +191,40 @@ class SkillsSelectComponent {
     if (matchesKey(data, Key.space)) {
       if (!row) return;
       if (row.type === "group") {
-        // Space on group = expand/collapse
-        if (this.expanded.has(row.groupName)) {
-          this.expanded.delete(row.groupName);
-        } else {
-          this.expanded.add(row.groupName);
+        // Smart toggle: if any unselected → select all, if all selected → deselect all
+        const group = this.groups.find((g) => g.name === row.groupName);
+        if (group) {
+          const allSelected = group.skills.every((s) => this.selected.has(s));
+          if (allSelected) {
+            for (const s of group.skills) this.selected.delete(s);
+          } else {
+            for (const s of group.skills) this.selected.add(s);
+          }
         }
       } else if (row.type === "skill") {
-        // Space on skill = toggle
         this.toggleSkill(row.skillName);
       }
       this.rebuildRows();
       this.cachedLines = undefined;
       this.onUpdate();
+      return;
+    }
+    if (matchesKey(data, Key.right)) {
+      if (row?.type === "group") {
+        this.expanded.add(row.groupName);
+        this.rebuildRows();
+        this.cachedLines = undefined;
+        this.onUpdate();
+      }
+      return;
+    }
+    if (matchesKey(data, Key.left)) {
+      if (row?.type === "group") {
+        this.expanded.delete(row.groupName);
+        this.rebuildRows();
+        this.cachedLines = undefined;
+        this.onUpdate();
+      }
       return;
     }
     if (matchesKey(data, Key.enter)) {
@@ -266,7 +287,7 @@ class SkillsSelectComponent {
 
     // Footer help
     add("");
-    add(` ${t.fg("dim", "↑↓ navigate  ·  Space expand/toggle  ·  Enter save  ·  Esc cancel")}`);
+    add(` ${t.fg("dim", "↑↓ navigate  ·  Space toggle  ·  ←→ expand/collapse  ·  Enter save  ·  Esc cancel")}`);
 
     lines.push(t.fg("accent", "─".repeat(rw)));
 
@@ -291,11 +312,12 @@ export default function skillsSelect(pi: ExtensionAPI) {
 
   // ── Footer status ──────────────────────────────────────────
 
-  function updateFooter(ctx: { ui: { setStatus: (k: string, v: string | undefined) => void } }): void {
+  function updateFooter(ctx: { ui: { theme: { fg: (c: string, s: string) => string }; setStatus: (k: string, v: string | undefined) => void } }): void {
+    const dim = (s: string) => ctx.ui.theme.fg("dim", s);
     if (config.configured) {
-      ctx.ui.setStatus("skills-select", `Skills: ${config.skills.length} active — /skills-select`);
+      ctx.ui.setStatus("skills-select", dim(`Skills: ${config.skills.length} active — /skills-select`));
     } else {
-      ctx.ui.setStatus("skills-select", "Skills: all active — /skills-select to configure");
+      ctx.ui.setStatus("skills-select", dim("Skills: all active — /skills-select to configure"));
     }
   }
 
