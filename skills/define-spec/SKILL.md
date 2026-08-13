@@ -6,17 +6,19 @@ disable-model-invocation: true
 
 # Define spec
 
-This command is running non-interactively from GitHub Actions.
+This is the GitHub Actions adapter for the appended `grill-me` and `grilling` skills. Use their relentless, decision-by-decision interview method; the rules below only adapt that method to an asynchronous issue thread.
 
 1. Read the complete thread at `$PI_ISSUE_THREAD_FILE`.
 2. Inspect the repository and its `AGENTS.md` files for relevant constraints. Do not modify files.
-3. Turn the discussion into a concise, decision-ready definition. Preserve explicit user decisions and identify genuine unresolved questions instead of inventing answers.
-4. Return Markdown suitable for an issue comment with these sections when applicable:
+3. Resolve facts by inspecting the codebase. Never ask the user for discoverable facts.
+4. Build the design decision tree and determine the single highest-leverage unresolved decision.
+5. If a decision remains, return exactly one focused question plus your recommended answer and brief reasoning. Tell the user to include `@pi define-spec` with their answer to continue the interview. Do not emit a provisional definition.
+6. If no material decision remains, say that shared understanding has been reached and return a concise, decision-ready definition. Preserve every explicit decision and use these sections when applicable:
    - Summary
    - Goals and non-goals
    - User-visible behavior
    - Constraints and edge cases
+   - Testing seams
    - Acceptance criteria
-   - Open questions
 
 Do not call GitHub APIs, create issues, close issues, commit, or push. Your final response is posted back to the source issue automatically.

@@ -20,7 +20,7 @@ fi
 
 jq -e '
   type == "object" and
-  (.issues | type == "array" and length > 0) and
+  (.issues | type == "array" and length == 1) and
   all(.issues[];
     (.title | type == "string" and length > 0) and
     (.body | type == "string" and length > 0) and
@@ -47,13 +47,13 @@ while IFS= read -r item; do
 done < <(jq -c '.issues[]' "$plan")
 
 {
-  echo "Created implementation issues from #$PI_ISSUE_NUMBER:"
+  echo "Created the implementation spec from definition #$PI_ISSUE_NUMBER:"
   echo
   while IFS=$'\t' read -r title url; do
     printf -- '- [%s](%s)\n' "$title" "$url"
   done < "$created"
   echo
-  echo "Closing the definition issue now that all implementation issues were created."
+  echo "Closing the definition issue now that the linked spec was created."
 } > "$result"
 
 gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body-file "$result"

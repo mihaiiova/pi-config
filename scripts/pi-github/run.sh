@@ -44,9 +44,33 @@ the selected command's orchestration rules.
 EOF
 )
 
-pi_args=(
-  --print
-  --no-session
+pi_args=(--print --no-session)
+
+# Compose the established Pi skill with the GitHub-specific adapter. The adapter
+# is appended last so it can translate interactive or direct-publish steps into
+# safe, non-interactive workflow behavior without replacing the core method.
+case "$PI_AGENT_COMMAND" in
+  define-spec)
+    pi_args+=(
+      --append-system-prompt "$PI_CONFIG_DIR/skills/grilling/SKILL.md"
+      --append-system-prompt "$PI_CONFIG_DIR/skills/grill-me/SKILL.md"
+    )
+    ;;
+  create-spec)
+    pi_args+=(
+      --append-system-prompt "$PI_CONFIG_DIR/skills/to-spec/SKILL.md"
+    )
+    ;;
+  implement)
+    pi_args+=(
+      --append-system-prompt "$PI_CONFIG_DIR/skills/tdd/SKILL.md"
+      --append-system-prompt "$PI_CONFIG_DIR/skills/tdd/tests.md"
+      --append-system-prompt "$PI_CONFIG_DIR/skills/tdd/mocking.md"
+    )
+    ;;
+esac
+
+pi_args+=(
   --append-system-prompt "$PI_CONFIG_DIR/skills/$PI_AGENT_COMMAND/SKILL.md"
   "$prompt"
 )
