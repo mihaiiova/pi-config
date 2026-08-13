@@ -1,0 +1,108 @@
+name: Pi agent
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Self-hosted runner label.
+        required: false
+        type: string
+        default: pi-agent
+      pi_command:
+        description: Pi executable installed on the runner.
+        required: false
+        type: string
+        default: pi
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pi-${{ github.repository }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    if: github.event_name == 'issue_comment' && github.event.action == 'created'
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PI_COMMAND: ${{ inputs.pi_command }}
+      PI_EVENT_PATH: ${{ github.event_path }}
+      PI_REPOSITORY: ${{ github.repository }}
+      PI_ISSUE_NUMBER: ${{ github.event.issue.number }}
+      PI_COMMENT_ID: ${{ github.event.comment.id }}
+
+    steps:
+      - name: Authorize command
+        id: command
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if jq -e '.issue.pull_request != null' "$PI_EVENT_PATH" >/dev/null; then
+            echo "Pi issue commands do not run from pull request comments."
+            exit 1
+          fi
+
+          body="$(jq -r '.comment.body // ""' "$PI_EVENT_PATH")"
+          shopt -s nocasematch
+          if [[ ! "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement)([[:space:]]|$) ]]; then
+            echo "No supported @pi command found."
+            exit 1
+          fi
+          command="${BASH_REMATCH[2],,}"
+
+          actor="$(jq -r '.comment.user.login' "$PI_EVENT_PATH")"
+          permission="$(gh api "repos/$PI_REPOSITORY/collaborators/$actor/permission" --jq .permission)"
+          case "$permission" in
+            admin|maintain|write) ;;
+            *)
+              echo "$actor does not have write access to $PI_REPOSITORY."
+              exit 1
+              ;;
+          esac
+
+          echo "name=$command" >> "$GITHUB_OUTPUT"
+
+      - name: Check out project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Check out Pi orchestration
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .pi-agent/pi-config
+          persist-credentials: false
+
+      - name: Keep orchestration out of project changes
+        shell: bash
+        run: echo '/.pi-agent/' >> .git/info/exclude
+
+      - name: Run Pi
+        id: pi
+        continue-on-error: true
+        shell: bash
+        env:
+          PI_AGENT_COMMAND: ${{ steps.command.outputs.name }}
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+          PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
+        run: "$PI_CONFIG_DIR/scripts/pi-github/run.sh"
+
+      - name: Report failure
+        if: steps.pi.outcome == 'failure'
+        shell: bash
+        env:
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+          PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" \
+            "Pi could not complete \`@pi ${{ steps.command.outputs.name }}\`. See the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for details."
+          exit 1

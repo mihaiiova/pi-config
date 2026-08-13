@@ -6,6 +6,7 @@ Shared pi configuration — extensions, skills, prompts, and themes synced acros
 
 ```
 pi-config/
+├── .github/workflows/ # Reusable self-hosted Pi agent workflow
 ├── extensions/       # Custom TypeScript extensions
 │   ├── pi-sync/      #   /pi-sync — git push/pull + reconcile packages
 │   └── skills-select/ #  /skills-select — per-project skill allowlist
@@ -14,6 +15,10 @@ pi-config/
 ├── themes/           # Theme files (.json)
 └── package.json      # Pi manifest + package list (pi.packages)
 ```
+
+## GitHub Actions agent
+
+Projects can delegate `@pi define-spec`, `@pi create-spec`, and `@pi implement` issue comments to the reusable self-hosted workflow in this repository. See [docs/github-actions.md](docs/github-actions.md) for the one-time runner setup, security model, and tiny per-project caller workflow.
 
 ## How packages work
 
