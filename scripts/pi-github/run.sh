@@ -59,6 +59,7 @@ case "$PI_AGENT_COMMAND" in
   create-spec)
     pi_args+=(
       --append-system-prompt "$PI_CONFIG_DIR/skills/to-spec/SKILL.md"
+      --append-system-prompt "$PI_CONFIG_DIR/skills/to-tickets/SKILL.md"
     )
     ;;
   implement)

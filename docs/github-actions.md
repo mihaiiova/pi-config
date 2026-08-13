@@ -3,7 +3,7 @@
 `pi-config` provides a reusable workflow for these issue-comment commands:
 
 - `@pi define-spec` — use `grill-me` to resolve one design decision per issue-comment round, then publish the agreed definition.
-- `@pi create-spec` — use `to-spec` to create one linked, implementation-ready spec issue, then close the definition.
+- `@pi create-spec` — use `to-spec`, then `to-tickets` when splitting is justified; create the linked spec and any dependency-aware implementation tickets before closing the definition.
 - `@pi implement` — use `tdd` at the spec's pre-agreed testing seams, then open or update a pull request.
 
 ## Server setup (once)
@@ -55,7 +55,7 @@ Only comments from users with `write`, `maintain`, or `admin` permission are acc
 
 The workflow uses GitHub's called-workflow metadata to check out the exact `pi-config` commit used by the caller, fetches the issue plus every comment through pagination, and appends the selected skill chain to Pi's normal system prompt. The checked-out orchestration directory is locally excluded from the project Git worktree. The thread is explicitly treated as untrusted discussion data; `define-spec` and `create-spec` Pi processes do not receive `GH_TOKEN`.
 
-`create-spec` separates reasoning from mutation: Pi writes a one-issue JSON plan, and a shell helper validates it before creating the spec. The parent definition is commented on and closed only after the linked spec issue is created successfully. If unresolved product or testing decisions block synthesis, the helper posts those questions and leaves the parent open. The full repository label vocabulary is included with the issue context so `to-spec` can apply the existing ready label without inventing labels.
+`create-spec` separates reasoning from mutation: Pi writes a JSON plan containing the spec plus zero or multiple tracer-bullet tickets. A shell helper validates the plan, creates the spec first, then creates tickets in dependency order with real parent and blocker links. Cohesive work stays on the spec; split work produces at least two agent-ready tickets. The definition closes only after every creation succeeds. If unresolved product or testing decisions block synthesis, the helper posts those questions and leaves the definition open. The full repository label vocabulary is included with the issue context so the skills can apply existing ready labels without inventing labels.
 
 ## Skill composition
 
@@ -63,8 +63,8 @@ The reusable workflow composes each established skill with a thin GitHub adapter
 
 ```text
 define-spec  → grill-me → grilling → asynchronous definition comment
-create-spec  → to-spec              → validated spec-issue plan
+create-spec  → to-spec → to-tickets → validated spec-and-ticket plan
 implement    → tdd                  → branch, tests, implementation, PR
 ```
 
-The established skill is loaded first and the GitHub adapter last. This preserves the skill's method while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run; include `@pi define-spec` in each answer until it reports shared understanding. `create-spec` records the testing seams in the spec, and `implement` treats those documented seams as the user confirmation required by `tdd`.
+The established skills are loaded first and the GitHub adapter last. This preserves their methods while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run; include `@pi define-spec` in each answer until it reports shared understanding. `create-spec` records testing seams in the spec and creates vertical-slice tickets only when useful. `implement` follows each ticket to its parent spec, treats the documented seams as the user confirmation required by `tdd`, and refuses to start while a declared blocking ticket is open.
