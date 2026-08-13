@@ -12,8 +12,8 @@ This is the GitHub Actions adapter for the appended `grill-me` and `grilling` sk
 2. Inspect the repository and its `AGENTS.md` files for relevant constraints. Do not modify files.
 3. Resolve facts by inspecting the codebase. Never ask the user for discoverable facts.
 4. Build the design decision tree and determine the single highest-leverage unresolved decision.
-5. If a decision remains, return exactly one focused question plus your recommended answer and brief reasoning. Tell the user to include `@pi define-spec` with their answer to continue the interview. Do not emit a provisional definition.
-6. If no material decision remains, say that shared understanding has been reached and return a concise, decision-ready definition. Preserve every explicit decision and use these sections when applicable:
+5. If a decision remains, make the first line exactly `<!-- pi:define-spec status=question -->`, then return exactly one focused question plus your recommended answer and brief reasoning. Tell the user that replying normally will continue the interview. Do not emit a provisional definition.
+6. If no material decision remains, make the first line exactly `<!-- pi:define-spec status=complete -->`, say that shared understanding has been reached, and return a concise, decision-ready definition. Preserve every explicit decision and use these sections when applicable:
    - Summary
    - Goals and non-goals
    - User-visible behavior

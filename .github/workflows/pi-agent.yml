@@ -13,6 +13,31 @@ on:
         required: false
         type: string
         default: pi
+      ready_label:
+        description: Existing label for implementation-ready work; empty disables it.
+        required: false
+        type: string
+        default: ready-for-agent
+      defining_label:
+        description: Label used while a definition interview is active.
+        required: false
+        type: string
+        default: agent:defining
+      branch_prefix:
+        description: Branch prefix used by implement.
+        required: false
+        type: string
+        default: pi/issue-
+      verification_command:
+        description: Project-level command implement must run before publishing.
+        required: false
+        type: string
+        default: ""
+      timeout_minutes:
+        description: Maximum duration of one Pi run.
+        required: false
+        type: number
+        default: 60
 
 permissions:
   contents: write
@@ -27,13 +52,17 @@ jobs:
   run:
     if: github.event_name == 'issue_comment' && github.event.action == 'created'
     runs-on: ${{ inputs.runner }}
-    timeout-minutes: 60
+    timeout-minutes: ${{ inputs.timeout_minutes }}
     env:
       PI_COMMAND: ${{ inputs.pi_command }}
       PI_EVENT_PATH: ${{ github.event_path }}
       PI_REPOSITORY: ${{ github.repository }}
       PI_ISSUE_NUMBER: ${{ github.event.issue.number }}
       PI_COMMENT_ID: ${{ github.event.comment.id }}
+      PI_READY_LABEL: ${{ inputs.ready_label }}
+      PI_DEFINING_LABEL: ${{ inputs.defining_label }}
+      PI_BRANCH_PREFIX: ${{ inputs.branch_prefix }}
+      PI_VERIFICATION_COMMAND: ${{ inputs.verification_command }}
 
     steps:
       - name: Authorize command
@@ -45,29 +74,34 @@ jobs:
           set -euo pipefail
 
           if jq -e '.issue.pull_request != null' "$PI_EVENT_PATH" >/dev/null; then
-            echo "Pi issue commands do not run from pull request comments."
+            echo "Pi issue commands do not run from pull request comments." >&2
             exit 1
           fi
 
           body="$(jq -r '.comment.body // ""' "$PI_EVENT_PATH")"
+          command=""
           shopt -s nocasematch
-          if [[ ! "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement)([[:space:]]|$) ]]; then
-            echo "No supported @pi command found."
+          if [[ "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement)([[:space:]]|$) ]]; then
+            command="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+          elif jq -e --arg label "$PI_DEFINING_LABEL" \
+            'any(.issue.labels[]?; .name == $label)' "$PI_EVENT_PATH" >/dev/null; then
+            command="define-spec"
+          else
+            echo "No supported @pi command or active definition interview found." >&2
             exit 1
           fi
-          command="${BASH_REMATCH[2],,}"
 
           actor="$(jq -r '.comment.user.login' "$PI_EVENT_PATH")"
           permission="$(gh api "repos/$PI_REPOSITORY/collaborators/$actor/permission" --jq .permission)"
           case "$permission" in
             admin|maintain|write) ;;
             *)
-              echo "$actor does not have write access to $PI_REPOSITORY."
+              echo "$actor does not have write access to $PI_REPOSITORY." >&2
               exit 1
               ;;
           esac
 
-          echo "name=$command" >> "$GITHUB_OUTPUT"
+          printf 'name=%s\n' "$command" >> "$GITHUB_OUTPUT"
 
       - name: Check out project
         uses: actions/checkout@v4
@@ -122,6 +156,10 @@ jobs:
             PI_WORK_DIR="$PI_WORK_DIR" \
             PI_REPOSITORY="$PI_REPOSITORY" \
             PI_ISSUE_NUMBER="$PI_ISSUE_NUMBER" \
+            PI_READY_LABEL="$PI_READY_LABEL" \
+            PI_DEFINING_LABEL="$PI_DEFINING_LABEL" \
+            PI_BRANCH_PREFIX="$PI_BRANCH_PREFIX" \
+            PI_VERIFICATION_COMMAND="$PI_VERIFICATION_COMMAND" \
             GITHUB_SERVER_URL="$GITHUB_SERVER_URL" \
             GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
             GITHUB_RUN_ID="$GITHUB_RUN_ID" \
@@ -168,7 +206,10 @@ jobs:
               "$PI_CONFIG_DIR/scripts/pi-github/apply-spec-plan.sh" \
                 "$PI_WORK_DIR/spec-plan.json" "$PI_WORK_DIR/result.md"
               ;;
-            define-spec|implement)
+            define-spec)
+              "$PI_CONFIG_DIR/scripts/pi-github/apply-definition.sh" "$PI_WORK_DIR/result.md"
+              ;;
+            implement)
               "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" "$PI_WORK_DIR/result.md"
               ;;
           esac

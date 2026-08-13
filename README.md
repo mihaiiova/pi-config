@@ -18,7 +18,7 @@ pi-config/
 
 ## GitHub Actions agent
 
-Projects can delegate `@pi define-spec`, `@pi create-spec`, and `@pi implement` issue comments to the reusable self-hosted workflow in this repository. See [docs/github-actions.md](docs/github-actions.md) for the one-time runner setup, security model, and tiny per-project caller workflow.
+Projects can delegate `@pi define-spec`, `@pi create-spec`, and `@pi implement` issue comments to the reusable self-hosted workflow in this repository. The v1 workflow supports resumable spec creation, automatic labeled definition interviews, project-level labels/branches/verification/timeouts, and an offline regression suite. See [docs/github-actions.md](docs/github-actions.md) for the one-time runner setup, security model, and tiny per-project caller workflow.
 
 ## How packages work
 

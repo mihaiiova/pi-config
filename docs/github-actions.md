@@ -36,28 +36,49 @@ permissions:
 
 jobs:
   pi:
-    if: contains(github.event.comment.body, '@pi')
+    if: >-
+      contains(github.event.comment.body, '@pi') ||
+      contains(github.event.issue.labels.*.name, 'agent:defining')
     uses: mihaiiova/pi-config/.github/workflows/pi-agent.yml@master
 ```
 
-For stable production use, replace `master` with a release tag or full commit SHA. A project can also set a different runner label:
+For stable production use, replace `master` with a release tag or full commit SHA. The label condition lets authorized maintainers answer an active `define-spec` question normally, without repeating `@pi define-spec` in every reply.
+
+All project-specific settings are optional workflow inputs:
 
 ```yaml
     with:
       runner: my-pi-runner
+      ready_label: ready-for-agent
+      defining_label: agent:defining
+      branch_prefix: pi/issue-
+      verification_command: npm test
+      timeout_minutes: 45
 ```
 
-That is the entire required per-project workflow. Project behavior stays in its normal `AGENTS.md`, `.pi/settings.json`, and project-local skills. The reusable workflow runs Pi from the project root and does not disable normal skill discovery.
+If `defining_label` is changed, use the same label in the caller job's `if` condition. Set `ready_label` to an empty string when the project has no ready label. The configured ready label must already exist; the workflow creates the definition-in-progress label on first use when needed.
+
+That is the entire per-project configuration. Project behavior stays in its normal `AGENTS.md`, `.pi/settings.json`, and project-local skills. The reusable workflow runs Pi from the project root and does not disable normal skill discovery.
 
 ## Authorization and behavior
 
-Only comments from users with `write`, `maintain`, or `admin` permission are accepted. Pull-request comments and unsupported commands are rejected before project code is checked out. Runs are serialized per issue.
+Only comments from users with `write`, `maintain`, or `admin` permission are accepted. Pull-request comments and unsupported commands are rejected before project code is checked out. Runs are serialized per issue. An explicit command takes precedence; otherwise a comment on an issue carrying the configured definition label continues `define-spec` automatically. The label is removed as soon as the skill reports shared understanding.
 
 The workflow uses GitHub's called-workflow metadata to check out the exact `pi-config` commit used by the caller, fetches the issue plus every comment through pagination, and appends the selected skill chain to Pi's normal system prompt. Neither checkout persists credentials. The thread is explicitly treated as untrusted discussion data: `define-spec` and `create-spec` run with read-only Pi tools in a sanitized environment containing no GitHub credential. Only `implement` receives the ephemeral token, with Git authorization provided through process environment rather than repository or global Git configuration.
 
 An `always()` cleanup step removes the fetched thread, generated plans and results, temporary GitHub CLI configuration, and the nested orchestration checkout from the persistent self-hosted runner. Cleanup validates both target paths before removing them.
 
-`create-spec` separates reasoning from mutation: Pi writes a JSON plan containing the spec plus zero or multiple tracer-bullet tickets. A shell helper validates the plan, creates the spec first, then creates tickets in dependency order with real parent and blocker links. Cohesive work stays on the spec; split work produces at least two agent-ready tickets. The definition closes only after every creation succeeds. If unresolved product or testing decisions block synthesis, the helper posts those questions and leaves the definition open. The full repository label vocabulary is included with the issue context so the skills can apply existing ready labels without inventing labels.
+`create-spec` separates reasoning from mutation: Pi writes a JSON plan containing the spec plus zero or multiple tracer-bullet tickets. A shell helper validates the entire plan, creates the spec first, then creates tickets in dependency order with real parent and blocker links. Every created issue carries a hidden source marker. On a rerun, the helper reconciles those markers and creates only missing work, so a retry after partial failure does not duplicate the spec or completed tickets. Cohesive work stays on the spec; split work produces at least two agent-ready tickets. The definition closes only after every creation succeeds. If unresolved product or testing decisions block synthesis, the helper posts those questions and leaves the definition open. The full repository label vocabulary is included with the issue context so the skills can apply existing ready labels without inventing labels.
+
+## V1 regression tests
+
+Run the offline suite with:
+
+```bash
+tests/pi-github/test.sh
+```
+
+It exercises the actual authorization step extracted from the reusable workflow, definition label transitions, partial and complete `create-spec` reruns, project configuration propagation, TDD/review skill ordering, credential-isolation invariants, shell syntax, and workflow structure. `.github/workflows/test-pi-agent.yml` runs the same suite on relevant pull requests and pushes to `master`; it uses a GitHub-hosted runner and no secrets.
 
 ## Skill composition
 
@@ -69,4 +90,4 @@ create-spec  → to-spec → to-tickets → validated spec-and-ticket plan
 implement    → tdd → code-review    → reviewed branch and PR
 ```
 
-The established skills are loaded first and the GitHub adapter last. This preserves their methods while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run; include `@pi define-spec` in each answer until it reports shared understanding. `create-spec` records testing seams in the spec and creates vertical-slice tickets only when useful. `implement` follows each ticket to its parent spec, treats the documented seams as the user confirmation required by `tdd`, and refuses to start while a declared blocking ticket is open. After TDD, it creates a local checkpoint, runs the Standards and Spec review axes from `code-review`, fixes findings, re-verifies, and only then pushes and opens the PR.
+The established skills are loaded first and the GitHub adapter last. This preserves their methods while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run and its label keeps the interview active for normal replies. `create-spec` records testing seams in the spec and creates vertical-slice tickets only when useful. `implement` follows each ticket to its parent spec, treats the documented seams as the user confirmation required by `tdd`, and refuses to start while a declared blocking ticket is open. After TDD, it creates a local checkpoint, runs the Standards and Spec review axes from `code-review`, fixes findings, re-verifies, and only then pushes and opens the PR.

@@ -63,18 +63,52 @@ create_issue() {
   gh "${args[@]}"
 }
 
-spec_title="$(jq -r '.spec.title' "$plan")"
-spec_body="$(jq -r --arg parent "#$PI_ISSUE_NUMBER" \
-  '.spec.body + "\n\n---\nDefinition: " + $parent' "$plan")"
-spec_labels="$(jq -c '.spec.labels // []' "$plan")"
-spec_url="$(create_issue "$spec_title" "$spec_body" "$spec_labels")"
+marker_for() {
+  local kind="$1"
+  local id="${2:-}"
+
+  if [[ -n "$id" ]]; then
+    printf '<!-- pi:create-spec:v1 source=%s#%s kind=%s id=%s -->' \
+      "$PI_REPOSITORY" "$PI_ISSUE_NUMBER" "$kind" "$id"
+  else
+    printf '<!-- pi:create-spec:v1 source=%s#%s kind=%s -->' \
+      "$PI_REPOSITORY" "$PI_ISSUE_NUMBER" "$kind"
+  fi
+}
+
+find_existing_url() {
+  local marker="$1"
+
+  jq -er --arg marker "$marker" '
+    [flatten[] | select((.body // "") | contains($marker)) | .html_url] |
+    if length == 0 then ""
+    elif length == 1 then .[0]
+    else error("multiple issues contain idempotency marker: " + $marker)
+    end
+  ' "$issues_snapshot"
+}
 
 created="$(mktemp)"
 ticket_state="$(mktemp)"
 state_next="${ticket_state}.next"
-trap 'rm -f "$created" "$ticket_state" "$state_next"' EXIT
-printf 'spec\t%s\t%s\n' "$spec_title" "$spec_url" > "$created"
+issues_snapshot="$(mktemp)"
+trap 'rm -f "$created" "$ticket_state" "$state_next" "$issues_snapshot"' EXIT
+
+gh api --paginate "repos/$PI_REPOSITORY/issues?state=all&per_page=100" --slurp \
+  > "$issues_snapshot"
 printf '[]\n' > "$ticket_state"
+
+spec_title="$(jq -r '.spec.title' "$plan")"
+spec_marker="$(marker_for spec)"
+spec_body="$(jq -r --arg parent "#$PI_ISSUE_NUMBER" \
+  --arg marker "$spec_marker" \
+  '.spec.body + "\n\n---\nDefinition: " + $parent + "\n\n" + $marker' "$plan")"
+spec_labels="$(jq -c '.spec.labels // []' "$plan")"
+spec_url="$(find_existing_url "$spec_marker")"
+if [[ -z "$spec_url" ]]; then
+  spec_url="$(create_issue "$spec_title" "$spec_body" "$spec_labels")"
+fi
+printf 'spec\t%s\t%s\n' "$spec_title" "$spec_url" > "$created"
 
 while IFS= read -r ticket; do
   ticket_id="$(jq -r '.id' <<< "$ticket")"
@@ -97,7 +131,13 @@ while IFS= read -r ticket; do
 
   full_body=$(printf '## Parent\n\n[%s](%s)\n\n%s\n\n%s' \
     "$spec_title" "$spec_url" "$ticket_body" "$blocked_section")
-  ticket_url="$(create_issue "$ticket_title" "$full_body" "$ticket_labels")"
+  ticket_marker="$(marker_for ticket "$ticket_id")"
+  full_body+=$'\n\n'
+  full_body+="$ticket_marker"
+  ticket_url="$(find_existing_url "$ticket_marker")"
+  if [[ -z "$ticket_url" ]]; then
+    ticket_url="$(create_issue "$ticket_title" "$full_body" "$ticket_labels")"
+  fi
   jq --arg id "$ticket_id" --arg title "$ticket_title" --arg url "$ticket_url" \
     '. + [{id: $id, title: $title, url: $url}]' "$ticket_state" > "$state_next"
   mv "$state_next" "$ticket_state"
@@ -105,7 +145,7 @@ while IFS= read -r ticket; do
 done < <(jq -c '.tickets[]' "$plan")
 
 {
-  echo "Created the implementation spec from definition #$PI_ISSUE_NUMBER:"
+  echo "Prepared the implementation spec from definition #$PI_ISSUE_NUMBER:"
   echo
   printf -- '- [%s](%s)\n' "$spec_title" "$spec_url"
   if [[ "$(jq '.tickets | length' "$plan")" -gt 0 ]]; then
@@ -116,7 +156,7 @@ done < <(jq -c '.tickets[]' "$plan")
     done < "$created"
   fi
   echo
-  echo "Closing the definition issue now that the linked implementation work was created."
+  echo "Closing the definition issue now that the linked implementation work is ready."
 } > "$result"
 
 gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body-file "$result"

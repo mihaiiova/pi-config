@@ -44,7 +44,7 @@ If blocked, write this alternative instead:
 }
 ```
 
-Use `ready-for-agent` when that triage label exists. If the thread shows a different project-specific ready label, use that instead. If no ready label is known, use an empty list rather than inventing one. When tickets are present, omit the ready label from the parent spec and apply it to each ticket; when tickets are empty, apply it to the spec itself.
+Use the configured `$PI_READY_LABEL` only when it is non-empty and exists in the repository label list included in the thread. Otherwise use an empty list rather than inventing a label. When tickets are present, omit the ready label from the parent spec and apply it to each ticket; when tickets are empty, apply it to the spec itself.
 
 Do not invoke `gh`, create or close issues yourself, modify project files, commit, or push. The trusted workflow captures your final JSON as the plan, validates it, creates the spec first, creates tickets in dependency order with real parent and blocker links, and closes the definition only after every creation succeeds.
 
