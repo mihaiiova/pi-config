@@ -15,7 +15,7 @@ This is the GitHub Actions adapter for the appended `to-spec` and `to-tickets` s
    - Keep `tickets` empty when the spec is one cohesive implementation task.
    - Create at least two tickets when independent tracer-bullet slices or context-size limits justify a split. Never create a redundant one-ticket wrapper around the spec.
    - Order blockers before dependants and express dependencies through stable ticket IDs.
-5. Write only valid JSON to `$PI_CREATE_SPEC_PLAN` using this exact shape:
+5. Return only valid JSON as your final response, with no Markdown fence or commentary, using this exact shape:
 
 ```json
 {
@@ -46,6 +46,6 @@ If blocked, write this alternative instead:
 
 Use `ready-for-agent` when that triage label exists. If the thread shows a different project-specific ready label, use that instead. If no ready label is known, use an empty list rather than inventing one. When tickets are present, omit the ready label from the parent spec and apply it to each ticket; when tickets are empty, apply it to the spec itself.
 
-Do not invoke `gh`, create or close issues yourself, modify project files, commit, or push. The workflow validates the plan, creates the spec first, creates tickets in dependency order with real parent and blocker links, and closes the definition only after every creation succeeds.
+Do not invoke `gh`, create or close issues yourself, modify project files, commit, or push. The trusted workflow captures your final JSON as the plan, validates it, creates the spec first, creates tickets in dependency order with real parent and blocker links, and closes the definition only after every creation succeeds.
 
-Your final response may briefly summarize the spec; it is not used to perform GitHub mutations.
+Do not summarize outside the JSON. The workflow posts the resulting issue links back to the definition.

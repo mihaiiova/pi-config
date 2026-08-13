@@ -29,7 +29,6 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 60
     env:
-      GH_TOKEN: ${{ github.token }}
       PI_COMMAND: ${{ inputs.pi_command }}
       PI_EVENT_PATH: ${{ github.event_path }}
       PI_REPOSITORY: ${{ github.repository }}
@@ -40,6 +39,8 @@ jobs:
       - name: Authorize command
         id: command
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -72,7 +73,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Check out Pi orchestration
         uses: actions/checkout@v4
@@ -86,23 +87,129 @@ jobs:
         shell: bash
         run: echo '/.pi-agent/' >> .git/info/exclude
 
-      - name: Run Pi
-        id: pi
+      - name: Fetch issue context
+        id: fetch
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+          PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$PI_WORK_DIR"
+          "$PI_CONFIG_DIR/scripts/pi-github/fetch-thread.sh" "$PI_WORK_DIR/issue-thread.md"
+
+      - name: Run planning Pi without GitHub credentials
+        id: pi_planning
+        if: steps.fetch.outcome == 'success' && steps.command.outputs.name != 'implement'
         continue-on-error: true
         shell: bash
         env:
           PI_AGENT_COMMAND: ${{ steps.command.outputs.name }}
           PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
           PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
-        run: "$PI_CONFIG_DIR/scripts/pi-github/run.sh"
+        run: |
+          set -euo pipefail
+          env -i \
+            HOME="$HOME" \
+            PATH="$PATH" \
+            LANG="${LANG:-C.UTF-8}" \
+            CI=true \
+            PI_COMMAND="$PI_COMMAND" \
+            PI_AGENT_COMMAND="$PI_AGENT_COMMAND" \
+            PI_CONFIG_DIR="$PI_CONFIG_DIR" \
+            PI_WORK_DIR="$PI_WORK_DIR" \
+            PI_REPOSITORY="$PI_REPOSITORY" \
+            PI_ISSUE_NUMBER="$PI_ISSUE_NUMBER" \
+            GITHUB_SERVER_URL="$GITHUB_SERVER_URL" \
+            GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+            GITHUB_RUN_ID="$GITHUB_RUN_ID" \
+            GH_CONFIG_DIR="$PI_WORK_DIR/gh-config" \
+            "$PI_CONFIG_DIR/scripts/pi-github/run.sh"
+
+      - name: Run implementation Pi with ephemeral GitHub credentials
+        id: pi_implement
+        if: steps.fetch.outcome == 'success' && steps.command.outputs.name == 'implement'
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_CONFIG_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}/gh-config
+          PI_AGENT_COMMAND: implement
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+          PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\r\n')"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth_header"
+          export GIT_TERMINAL_PROMPT=0
+          "$PI_CONFIG_DIR/scripts/pi-github/run.sh"
+
+      - name: Apply Pi result
+        id: apply
+        if: >-
+          always() &&
+          ((steps.command.outputs.name == 'implement' && steps.pi_implement.outcome == 'success') ||
+          (steps.command.outputs.name != 'implement' && steps.pi_planning.outcome == 'success'))
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PI_AGENT_COMMAND: ${{ steps.command.outputs.name }}
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+          PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          case "$PI_AGENT_COMMAND" in
+            create-spec)
+              "$PI_CONFIG_DIR/scripts/pi-github/apply-spec-plan.sh" \
+                "$PI_WORK_DIR/spec-plan.json" "$PI_WORK_DIR/result.md"
+              ;;
+            define-spec|implement)
+              "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" "$PI_WORK_DIR/result.md"
+              ;;
+          esac
 
       - name: Report failure
-        if: steps.pi.outcome == 'failure'
+        if: >-
+          always() &&
+          (steps.fetch.outcome == 'failure' ||
+          steps.pi_planning.outcome == 'failure' ||
+          steps.pi_implement.outcome == 'failure' ||
+          steps.apply.outcome == 'failure')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
+        run: |
+          "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" \
+            "Pi could not complete \`@pi ${{ steps.command.outputs.name }}\`. See the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for details."
+          exit 1
+
+      - name: Remove ephemeral Pi data
+        if: always()
         shell: bash
         env:
           PI_CONFIG_DIR: ${{ github.workspace }}/.pi-agent/pi-config
           PI_WORK_DIR: ${{ runner.temp }}/pi-agent-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" \
-            "Pi could not complete \`@pi ${{ steps.command.outputs.name }}\`. See the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for details."
-          exit 1
+          set -euo pipefail
+
+          expected_work_dir="$RUNNER_TEMP/pi-agent-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          if [[ "$PI_WORK_DIR" != "$expected_work_dir" ]]; then
+            echo "Refusing to clean unexpected work directory: $PI_WORK_DIR" >&2
+            exit 1
+          fi
+
+          expected_config_dir="$GITHUB_WORKSPACE/.pi-agent/pi-config"
+          if [[ "$PI_CONFIG_DIR" != "$expected_config_dir" ]]; then
+            echo "Refusing to clean unexpected config directory: $PI_CONFIG_DIR" >&2
+            exit 1
+          fi
+
+          rm -rf -- "$PI_WORK_DIR"
+          rm -rf -- "$PI_CONFIG_DIR"
+          rmdir "$GITHUB_WORKSPACE/.pi-agent" 2>/dev/null || true
