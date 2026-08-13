@@ -4,7 +4,7 @@
 
 - `@pi define-spec` — use `grill-me` to resolve one design decision per issue-comment round, then publish the agreed definition.
 - `@pi create-spec` — use `to-spec`, then `to-tickets` when splitting is justified; create the linked spec and any dependency-aware implementation tickets before closing the definition.
-- `@pi implement` — use `tdd` at the spec's pre-agreed testing seams, then open or update a pull request.
+- `@pi implement` — use `tdd` at the spec's pre-agreed testing seams, run `code-review` against the resulting commit, fix findings, then open or update a pull request.
 
 ## Server setup (once)
 
@@ -66,7 +66,7 @@ The reusable workflow composes each established skill with a thin GitHub adapter
 ```text
 define-spec  → grill-me → grilling → asynchronous definition comment
 create-spec  → to-spec → to-tickets → validated spec-and-ticket plan
-implement    → tdd                  → branch, tests, implementation, PR
+implement    → tdd → code-review    → reviewed branch and PR
 ```
 
-The established skills are loaded first and the GitHub adapter last. This preserves their methods while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run; include `@pi define-spec` in each answer until it reports shared understanding. `create-spec` records testing seams in the spec and creates vertical-slice tickets only when useful. `implement` follows each ticket to its parent spec, treats the documented seams as the user confirmation required by `tdd`, and refuses to start while a declared blocking ticket is open.
+The established skills are loaded first and the GitHub adapter last. This preserves their methods while adapting interactive prompts and direct tracker writes to safe Actions behavior. `define-spec` asks only one question per run; include `@pi define-spec` in each answer until it reports shared understanding. `create-spec` records testing seams in the spec and creates vertical-slice tickets only when useful. `implement` follows each ticket to its parent spec, treats the documented seams as the user confirmation required by `tdd`, and refuses to start while a declared blocking ticket is open. After TDD, it creates a local checkpoint, runs the Standards and Spec review axes from `code-review`, fixes findings, re-verifies, and only then pushes and opens the PR.
