@@ -104,6 +104,22 @@ jobs:
 
           printf 'name=%s\n' "$command" >> "$GITHUB_OUTPUT"
 
+      - name: Confirm Pi implementation started
+        if: steps.command.outputs.name == 'implement'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/pi-implement-started-$GITHUB_RUN_ID.md" <<EOF
+          ## Pi implementation started
+
+          Pi accepted `@pi implement` for this issue.
+
+          - [View live workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+          - A completion comment with a changes link will be posted when the implementation succeeds.
+          EOF
+          gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body-file "$RUNNER_TEMP/pi-implement-started-$GITHUB_RUN_ID.md"
+
       - name: Report Pi help
         if: steps.command.outputs.name == 'help'
         shell: bash
@@ -251,8 +267,11 @@ jobs:
               "$PI_CONFIG_DIR/scripts/pi-github/apply-definition.sh" "$PI_WORK_DIR/result.md"
               ;;
             implement)
+              branch="${PI_BRANCH_PREFIX}${PI_ISSUE_NUMBER}"
+              changes_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/${{ github.event.repository.default_branch }}...$branch?expand=1"
               {
                 printf '## Pi implementation completed\n\nThe implementation workflow completed successfully.\n\n'
+                printf -- '- [View changes](%s)\n- [View workflow run](%s)\n\n' "$changes_url" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
                 cat "$PI_WORK_DIR/result.md"
               } > "$PI_WORK_DIR/implementation-comment.md"
               "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" "$PI_WORK_DIR/implementation-comment.md"
