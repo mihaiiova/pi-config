@@ -20,6 +20,8 @@ The runner executes code from repositories that opt in. Use a dedicated, isolate
 
 ## Project setup
 
+When `pi-config` is installed globally, an agent working in the local project can perform this setup by using the `install-github-workflow` skill or by being told **“install GitHub workflow.”** It discovers the verification command and label settings, installs the caller below, verifies it, and explains the issue workflow.
+
 Add this single caller as `.github/workflows/pi.yml` in each project:
 
 ```yaml

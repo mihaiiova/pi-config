@@ -206,6 +206,27 @@ test_static_contracts() {
     apply = steps.find { |step| step["id"] == "apply" }
     abort "definition status helper is not wired" unless apply.fetch("run").include?("apply-definition.sh")
   ' "$root/.github/workflows/pi-agent.yml"
+  ruby -ryaml -e '
+    skill_path, agent_path, template_path = ARGV
+    parts = File.read(skill_path).split("---", 3)
+    abort "bad installer skill frontmatter" unless parts.length == 3
+    metadata = YAML.safe_load(parts[1], permitted_classes: [], aliases: false)
+    abort "wrong installer skill name" unless metadata["name"] == "install-github-workflow"
+    abort "installer trigger missing" unless metadata.fetch("description").include?("install GitHub workflow")
+    agent = YAML.safe_load_file(agent_path, permitted_classes: [], aliases: false)
+    abort "stale installer default prompt" unless agent.dig("interface", "default_prompt").include?("$install-github-workflow")
+    template = File.read(template_path)
+    rendered = template
+      .gsub("__PI_CONFIG_REF__", "0123456789abcdef0123456789abcdef01234567")
+      .gsub("__READY_LABEL__", "ready-for-agent")
+      .gsub("__VERIFICATION_COMMAND__", "npm test")
+    YAML.safe_load(rendered, aliases: true)
+    abort "caller ref missing" unless rendered.include?("pi-agent.yml@0123456789abcdef0123456789abcdef01234567")
+    abort "definition continuation missing" unless rendered.include?("agent:defining")
+  ' \
+    "$root/skills/install-github-workflow/SKILL.md" \
+    "$root/skills/install-github-workflow/agents/openai.yaml" \
+    "$root/skills/install-github-workflow/assets/pi.yml"
   git -C "$root" diff --check
   pass 'shell, workflow, credential, and whitespace contracts are valid'
 }

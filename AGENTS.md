@@ -4,6 +4,10 @@ Shared pi configuration lives in `~/projects/pi-config/` — a git-backed pi pac
 
 See [README.md](README.md) for the full structure and setup guide.
 
+## Installing the GitHub workflow in a project
+
+When asked to "install GitHub workflow" in the current local project, use the `install-github-workflow` skill. It installs the thin caller, verifies the project-specific settings, and explains the `@pi define-spec` → `@pi create-spec` → `@pi implement` lifecycle.
+
 ## Creating new extensions or skills
 
 Place new extensions in `~/projects/pi-config/extensions/<name>/` and new skills in `~/projects/pi-config/skills/<name>/`. Pi auto-discovers both. Run `/reload` to pick up new additions.

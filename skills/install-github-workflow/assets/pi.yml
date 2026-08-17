@@ -1,0 +1,25 @@
+name: Pi
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  pi:
+    if: >-
+      contains(github.event.comment.body, '@pi') ||
+      contains(github.event.issue.labels.*.name, 'agent:defining')
+    uses: mihaiiova/pi-config/.github/workflows/pi-agent.yml@__PI_CONFIG_REF__
+    with:
+      runner: pi-agent
+      ready_label: "__READY_LABEL__"
+      defining_label: agent:defining
+      branch_prefix: pi/issue-
+      verification_command: >-
+        __VERIFICATION_COMMAND__
+      timeout_minutes: 45

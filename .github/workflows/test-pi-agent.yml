@@ -9,6 +9,7 @@ on:
       - skills/define-spec/**
       - skills/create-spec/**
       - skills/implement/**
+      - skills/install-github-workflow/**
       - tests/pi-github/**
   push:
     branches: [master]
@@ -19,6 +20,7 @@ on:
       - skills/define-spec/**
       - skills/create-spec/**
       - skills/implement/**
+      - skills/install-github-workflow/**
       - tests/pi-github/**
 
 permissions:
