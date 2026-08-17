@@ -12,9 +12,8 @@ labels_json="$(mktemp)"
 trap 'rm -f "$issue_json" "$comments_json" "$labels_json"' EXIT
 
 gh api "repos/$PI_REPOSITORY/issues/$PI_ISSUE_NUMBER" > "$issue_json"
-gh api --paginate "repos/$PI_REPOSITORY/issues/$PI_ISSUE_NUMBER/comments?per_page=100" \
-  --slurp > "$comments_json"
-gh api --paginate "repos/$PI_REPOSITORY/labels?per_page=100" --slurp > "$labels_json"
+gh api --paginate "repos/$PI_REPOSITORY/issues/$PI_ISSUE_NUMBER/comments?per_page=100" | jq -s . > "$comments_json"
+gh api --paginate "repos/$PI_REPOSITORY/labels?per_page=100" | jq -s . > "$labels_json"
 
 jq -r '
   "# Issue #\(.number): \(.title)\n\n" +

@@ -112,7 +112,17 @@ jobs:
         run: |
           set -euo pipefail
           labels=$(gh issue view "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --json labels --jq '[.labels[].name] | join(", ")')
-          gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body "## Pi status\n\n- Issue: #$PI_ISSUE_NUMBER\n- Labels: ${labels:-none}\n- Command accepted: @pi status\n- Runner: $RUNNER_NAME\n\nNo implementation was started by this status check."
+          cat > "$RUNNER_TEMP/pi-status-$GITHUB_RUN_ID.md" <<EOF
+          ## Pi status
+
+          - Issue: #$PI_ISSUE_NUMBER
+          - Labels: ${labels:-none}
+          - Command accepted: @pi status
+          - Runner: $RUNNER_NAME
+
+          No implementation was started by this status check.
+          EOF
+          gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body-file "$RUNNER_TEMP/pi-status-$GITHUB_RUN_ID.md"
 
       - name: Check out project
         uses: actions/checkout@v4
@@ -134,6 +144,7 @@ jobs:
 
       - name: Fetch issue context
         id: fetch
+        if: steps.command.outputs.name != 'status'
         continue-on-error: true
         shell: bash
         env:
