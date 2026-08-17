@@ -55,7 +55,6 @@ jobs:
     timeout-minutes: ${{ inputs.timeout_minutes }}
     env:
       PI_COMMAND: ${{ inputs.pi_command }}
-      PI_EVENT_PATH: ${{ github.event_path }}
       PI_REPOSITORY: ${{ github.repository }}
       PI_ISSUE_NUMBER: ${{ github.event.issue.number }}
       PI_COMMENT_ID: ${{ github.event.comment.id }}
@@ -73,6 +72,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          : "${PI_EVENT_PATH:=$GITHUB_EVENT_PATH}"
+
           if jq -e '.issue.pull_request != null' "$PI_EVENT_PATH" >/dev/null; then
             echo "Pi issue commands do not run from pull request comments." >&2
             exit 1
@@ -81,7 +82,7 @@ jobs:
           body="$(jq -r '.comment.body // ""' "$PI_EVENT_PATH")"
           command=""
           shopt -s nocasematch
-          if [[ "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement)([[:space:]]|$) ]]; then
+          if [[ "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement|status)([[:space:]]|$) ]]; then
             command="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
           elif jq -e --arg label "$PI_DEFINING_LABEL" \
             'any(.issue.labels[]?; .name == $label)' "$PI_EVENT_PATH" >/dev/null; then
@@ -102,6 +103,16 @@ jobs:
           esac
 
           printf 'name=%s\n' "$command" >> "$GITHUB_OUTPUT"
+
+      - name: Report Pi status
+        if: steps.command.outputs.name == 'status'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          labels=$(gh issue view "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --json labels --jq '[.labels[].name] | join(", ")')
+          gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body "## Pi status\n\n- Issue: #$PI_ISSUE_NUMBER\n- Labels: ${labels:-none}\n- Command accepted: @pi status\n- Runner: $RUNNER_NAME\n\nNo implementation was started by this status check."
 
       - name: Check out project
         uses: actions/checkout@v4
@@ -136,7 +147,7 @@ jobs:
 
       - name: Run planning Pi without GitHub credentials
         id: pi_planning
-        if: steps.fetch.outcome == 'success' && steps.command.outputs.name != 'implement'
+        if: steps.fetch.outcome == 'success' && steps.command.outputs.name != 'implement' && steps.command.outputs.name != 'status'
         continue-on-error: true
         shell: bash
         env:
@@ -210,7 +221,11 @@ jobs:
               "$PI_CONFIG_DIR/scripts/pi-github/apply-definition.sh" "$PI_WORK_DIR/result.md"
               ;;
             implement)
-              "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" "$PI_WORK_DIR/result.md"
+              {
+                printf '## Pi implementation completed\n\nThe implementation workflow completed successfully.\n\n'
+                cat "$PI_WORK_DIR/result.md"
+              } > "$PI_WORK_DIR/implementation-comment.md"
+              "$PI_CONFIG_DIR/scripts/pi-github/comment.sh" "$PI_WORK_DIR/implementation-comment.md"
               ;;
           esac
 
