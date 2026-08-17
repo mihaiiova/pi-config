@@ -26,8 +26,7 @@ import { resolve, join } from "node:path";
 
 // ── Config ────────────────────────────────────────────────────
 
-const REPO_PATH =
-  process.env.PI_CONFIG_PATH ?? resolve(process.env.HOME!, "projects/pi-config");
+const REPO_PATH = resolve(process.env.HOME!, "projects/pi-config");
 const SETTINGS_PATH = resolve(process.env.HOME!, ".pi/agent/settings.json");
 
 // ── Git helpers ────────────────────────────────────────────────
