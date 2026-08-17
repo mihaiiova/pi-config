@@ -82,7 +82,7 @@ jobs:
           body="$(jq -r '.comment.body // ""' "$PI_EVENT_PATH")"
           command=""
           shopt -s nocasematch
-          if [[ "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement|status)([[:space:]]|$) ]]; then
+          if [[ "$body" =~ (^|[[:space:]])@pi[[:space:]]+(define-spec|create-spec|implement|status|help)([[:space:]]|$) ]]; then
             command="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
           elif jq -e --arg label "$PI_DEFINING_LABEL" \
             'any(.issue.labels[]?; .name == $label)' "$PI_EVENT_PATH" >/dev/null; then
@@ -103,6 +103,25 @@ jobs:
           esac
 
           printf 'name=%s\n' "$command" >> "$GITHUB_OUTPUT"
+
+      - name: Report Pi help
+        if: steps.command.outputs.name == 'help'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/pi-help-$GITHUB_RUN_ID.md" <<'EOF'
+          ## Pi issue-agent commands
+
+          - `@pi help` — show this command reference.
+          - `@pi status` — confirm the runner accepted the request and show issue labels; does not start work.
+          - `@pi define-spec` — interview one decision at a time and produce shared understanding.
+          - `@pi create-spec` — turn the agreed definition into a spec and, when needed, dependency-aware tickets.
+          - `@pi implement` — implement ready work, run tests and code review, then open or update a pull request.
+
+          Commands work only on issues and require write, maintain, or admin permission. `define-spec` accepts normal replies while its definition label is active.
+          EOF
+          gh issue comment "$PI_ISSUE_NUMBER" --repo "$PI_REPOSITORY" --body-file "$RUNNER_TEMP/pi-help-$GITHUB_RUN_ID.md"
 
       - name: Report Pi status
         if: steps.command.outputs.name == 'status'
@@ -144,7 +163,7 @@ jobs:
 
       - name: Fetch issue context
         id: fetch
-        if: steps.command.outputs.name != 'status'
+        if: steps.command.outputs.name != 'status' && steps.command.outputs.name != 'help'
         continue-on-error: true
         shell: bash
         env:
@@ -158,7 +177,7 @@ jobs:
 
       - name: Run planning Pi without GitHub credentials
         id: pi_planning
-        if: steps.fetch.outcome == 'success' && steps.command.outputs.name != 'implement' && steps.command.outputs.name != 'status'
+        if: steps.fetch.outcome == 'success' && steps.command.outputs.name != 'implement' && steps.command.outputs.name != 'status' && steps.command.outputs.name != 'help'
         continue-on-error: true
         shell: bash
         env:

@@ -4,6 +4,7 @@
 
 - `@pi define-spec` — use `grill-me` to resolve one design decision per issue-comment round, then publish the agreed definition.
 - `@pi create-spec` — use `to-spec`, then `to-tickets` when splitting is justified; create the linked spec and any dependency-aware implementation tickets before closing the definition.
+- `@pi help` — post the available issue-agent commands and their purpose.
 - `@pi status` — post the issue labels and runner acknowledgement without starting work.
 - `@pi implement` — use `tdd` at the spec's pre-agreed testing seams, run `code-review` against the resulting commit, fix findings, then open or update a pull request.
 
