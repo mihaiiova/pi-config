@@ -15,8 +15,8 @@ import {
   type Theme,
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -72,6 +72,7 @@ function loadConfig(configPath: string): SkillsConfig {
 }
 
 function saveConfig(configPath: string, config: SkillsConfig): void {
+  mkdirSync(dirname(configPath), { recursive: true });
   writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
