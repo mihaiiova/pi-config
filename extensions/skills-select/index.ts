@@ -93,7 +93,11 @@ function buildGroups(skills: SkillInfo[]): { groups: SkillGroup[]; standalone: s
   for (const [name, skillList] of [...groupMap.entries()].sort((a, b) =>
     a[0].localeCompare(b[0]),
   )) {
-    groups.push({ name, skills: skillList.sort() });
+    if (skillList.length > 1) {
+      groups.push({ name, skills: skillList.sort() });
+    } else {
+      standalone.push(skillList[0]);
+    }
   }
 
   return { groups, standalone: standalone.sort() };
