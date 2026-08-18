@@ -1,5 +1,5 @@
 ---
-name: workers-best-practices
+name: cloudflare-workers-best-practices
 description: Reviews and authors Cloudflare Workers code against production best practices. Load when writing new Workers, reviewing Worker code, configuring wrangler.jsonc, or checking for common Workers anti-patterns (streaming, floating promises, global state, secrets, bindings, observability). Biases towards retrieval from Cloudflare docs over pre-trained knowledge.
 ---
 
@@ -115,9 +115,9 @@ mkdir -p /tmp/workers-types-latest && \
 
 This skill covers Workers-specific best practices and code review. For related topics:
 
-- **Durable Objects**: load the `durable-objects` skill
+- **Durable Objects**: load the `cloudflare-durable-objects` skill
 - **Workflows**: see [Rules of Workflows](https://developers.cloudflare.com/workflows/build/rules-of-workflows/)
-- **Wrangler CLI commands**: load the `wrangler` skill
+- **Wrangler CLI commands**: load the `cloudflare-wrangler` skill
 
 ## Principles
 
