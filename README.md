@@ -34,8 +34,8 @@ Packages are tracked in `package.json` under `pi.packages` and installed globall
 ## Setup on a new machine
 
 ```bash
-git clone <remote-url> ~/projects/pi-config
-pi install ~/projects/pi-config
+git clone <remote-url> ~/dev/pi-config
+pi install ~/dev/pi-config
 ```
 
 Then run `/pi-sync` to install all listed packages. Then `/reload`.
@@ -49,7 +49,7 @@ Run **`/pi-sync`** from any pi session. It handles:
 3. Asks about packages installed locally but not in the list
 4. `pi update --extensions`
 
-If merge conflicts: resolve manually in `~/projects/pi-config`, then re-run `/pi-sync`.
+If merge conflicts: resolve manually in `~/dev/pi-config`, then re-run `/pi-sync`.
 
 After syncing, `/reload` to pick up new or changed extensions.
 
