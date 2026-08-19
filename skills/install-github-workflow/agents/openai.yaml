@@ -1,4 +1,0 @@
-interface:
-  display_name: "Install GitHub Workflow"
-  short_description: "Install and explain the shared Pi issue workflow"
-  default_prompt: "Use $install-github-workflow to add the shared Pi GitHub Actions caller to this project."

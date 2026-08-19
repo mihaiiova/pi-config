@@ -4,9 +4,9 @@ Shared pi configuration lives in the `pi-config` repo — a git-backed pi packag
 
 See [README.md](README.md) for the full structure and setup guide.
 
-## Installing the GitHub workflow in a project
+## Spec lifecycle
 
-When asked to "install GitHub workflow" in the current local project, use the `install-github-workflow` skill. It installs the thin caller, verifies the project-specific settings, and explains the `@pi define-spec` → `@pi create-spec` → `@pi implement` lifecycle.
+Take work from idea to merged branch with the `/new-spec` → `/start-spec` → `/review-spec` → `/close-spec` slash commands. Each stage persists status as a GitHub label (`spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`). See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for the full vocabulary and branch/base-branch conventions.
 
 ## Creating new extensions or skills
 

@@ -6,7 +6,6 @@ Shared pi configuration — extensions, skills, prompts, and themes synced acros
 
 ```
 pi-config/
-├── .github/workflows/ # Reusable self-hosted Pi agent workflow
 ├── extensions/       # Custom TypeScript extensions
 │   ├── pi-sync/      #   /pi-sync — git push/pull + reconcile packages
 │   └── skills-select/ #  /skills-select — per-project skill allowlist
@@ -16,11 +15,16 @@ pi-config/
 └── package.json      # Pi manifest + package list (pi.packages)
 ```
 
-## GitHub Actions agent
+## Spec lifecycle
 
-Projects can delegate `@pi help`, `@pi define-spec`, `@pi create-spec`, `@pi status`, and `@pi implement` issue comments to the reusable self-hosted workflow in this repository. The v1 workflow supports resumable spec creation, automatic labeled definition interviews, project-level labels/branches/verification/timeouts, and an offline regression suite. See [docs/github-actions.md](docs/github-actions.md) for the one-time runner setup, security model, and tiny per-project caller workflow.
+Four interactive slash commands take work from idea to merged branch:
 
-From any local project where this package is installed, tell Pi **“install GitHub workflow”**. The `install-github-workflow` skill will inspect that project, add or update `.github/workflows/pi.yml`, verify it, and explain how to use the issue commands.
+- `/new-spec` — understand and define the work, publish the spec (and tasks) to GitHub, mark it `ready`.
+- `/start-spec` — validate readiness, cut a `spec/<id>-<slug>` branch, implement with TDD, mark `in-progress`.
+- `/review-spec` — run tests/typecheck/lint/build, code-review, review-session, verify acceptance criteria, mark `reviewed`.
+- `/close-spec` — merge into the base branch, push, close issues, delete the branch, mark `done`.
+
+See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for the status-label vocabulary, base-branch configuration, and branch naming.
 
 ## How packages work
 
