@@ -1,30 +1,30 @@
 ---
 name: start-spec
-description: Begin implementing a ready spec. Refuse epic containers, present their startable children, validate readiness and blockers, sync the configured base branch, create the spec feature branch, mark it in progress, and implement with tdd.
+description: Begin implementing a ready spec. Refuse epic containers, present their startable children, validate readiness and blockers, resume or create the spec branch, mark it in progress, and implement with tdd.
 ---
 
 # Start spec
 
-Load a ready spec, prepare the worktree, and implement it test-first. An epic is a planning container, not something `/start-spec` implements directly.
+Load one implementation spec, prepare or resume its worktree, and implement it test-first. An epic is a planning container, not an implementation target.
 
 ## Process
 
-1. **Load the issue.** Take the target by issue number, URL, or path. Read the issue body and all its comments.
+1. **Load the issue.** Take the target by issue number, URL, or path. Read the body and comments.
 
-2. **Refuse an epic container.** If the issue is an epic — it carries the `spec:epic` label, or its body is an epic structure (`# Summary` / `# Goals` / `# Child specs`) — do **not** implement it. Report:
+2. **Refuse an epic container.** If the issue carries `spec:epic` (or clearly has the epic structure), do not implement it. Report that it is an epic and list its child specs, highlighting currently startable children after checking blockers. Stop.
 
-   > This is an epic. Start one of its ready child specs instead.
+3. **Validate state and blockers.** A fresh spec must carry `spec:ready`. A resumed spec may carry `spec:in-progress`. If `## Blocked by` contains any still-open issue, refuse and report the blockers. If Testing Decisions do not contain a usable public testing seam, stop before touching the worktree and resolve that decision.
 
-   Then list the child specs and, taking `Blocked by` into account, which are currently startable. Stop here.
+4. **Determine and sync the base branch.** Read `spec.baseBranch` from `.pi/settings.json`; otherwise use the repository default. `git fetch origin`, then fast-forward the local base to its remote. Never invent or silently create a missing base branch.
 
-3. **Validate readiness.** The spec issue must carry `spec:ready`. If it is blocked (its body's `## Blocked by` links to issues that are still open), refuse and report the open blockers. If the testing seams in its Testing Decisions are missing or ambiguous, stop and ask for the seam decision before touching the worktree.
+5. **Resume or create the feature branch.** The canonical branch is `spec/<issue-number>-<slug>`.
+   - If neither local nor remote branch exists, create it from the synced base.
+   - If it already exists and clearly belongs to this spec, check it out and resume it; if only remote exists, create the local tracking branch.
+   - If a same-named branch exists but its history/issue references make ownership ambiguous, refuse and ask rather than overwriting it.
+   - Never reset or recreate an existing spec branch just to make it match the base.
 
-4. **Determine the base branch.** Read `spec.baseBranch` from `.pi/settings.json`; otherwise use the repository's default branch. Sync it: `git fetch origin`, then fast-forward the local base branch to its remote.
+6. **Transition to in progress.** Treat lifecycle labels as a state machine: a non-epic spec carries exactly one of `spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`. When starting fresh, remove other lifecycle-state labels and apply `spec:in-progress`. When resuming an already `spec:in-progress` spec, leave the state unchanged.
 
-5. **Create the feature branch.** Branch from the synced base as `spec/<id>-<slug>`, where `<id>` is the spec issue number and `<slug>` is a short kebab-case slug from the title. Never commit directly to the base branch.
+7. **Implement with `/tdd`.** Work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Create coherent checkpoint commits referencing the spec issue.
 
-6. **Mark in progress.** Apply `spec:in-progress` and remove `spec:ready` on the spec issue (create the label if needed).
-
-7. **Implement with `/tdd`.** Work only the spec's agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, the minimum implementation to pass it, then the next slice. Confirm each red failure is caused by the missing behavior before writing production code. Create checkpoint commits that reference the spec issue.
-
-8. **Leave the branch unmerged.** Do not merge or push to the base branch. `/review-spec` verifies the work and `/close-spec` merges it.
+8. **Leave the branch unmerged.** Do not merge or push the base branch. `/review-spec` verifies the implementation and `/close-spec` integrates it.
