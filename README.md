@@ -17,14 +17,38 @@ pi-config/
 
 ## Spec lifecycle
 
-Four interactive slash commands take work from idea to merged branch:
+Two discovery commands feed a four-stage lifecycle:
 
-- `/new-spec` — understand and define the work, publish the spec (and tasks) to GitHub, mark it `ready`.
-- `/start-spec` — validate readiness, cut a `spec/<id>-<slug>` branch, implement with TDD, mark `in-progress`.
-- `/review-spec` — run tests/typecheck/lint/build, code-review, review-session, verify acceptance criteria, mark `reviewed`.
-- `/close-spec` — merge into the base branch, push, close issues, delete the branch, mark `done`.
+- `/review-backlog` — review open issues against the code and recommend what product/project work to do next.
+- `/audit-codebase` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
+- `/new-spec` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
+- `/start-spec` — implement one spec with TDD (refuses epic containers).
+- `/review-spec` — verify one implementation.
+- `/close-spec` — merge, close, clean up; updates parent-epic progress.
 
-See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for the status-label vocabulary, base-branch configuration, and branch naming.
+Example (normal):
+
+```text
+/new-spec "Add CSV export"      → Spec #120
+/start-spec #120
+/review-spec
+/close-spec
+```
+
+Example (epic):
+
+```text
+/new-spec "Rework content ingestion"
+→ Epic #200
+   → Spec #201
+   → Spec #202 (blocked by #201)
+   → Spec #203 (blocked by #201)
+
+/start-spec #201   … /close-spec
+/start-spec #202   …
+```
+
+`/start-spec` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and base-branch configuration.
 
 ## How packages work
 

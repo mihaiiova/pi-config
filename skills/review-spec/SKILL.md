@@ -1,11 +1,11 @@
 ---
 name: review-spec
-description: Verify a completed implementation. Run tests, typecheck, lint, and build; run code-review and review-session; check acceptance criteria and tasks; produce a consolidated report; mark reviewed only when there are no blockers.
+description: Verify a completed implementation of one spec. Run tests, typecheck, lint, and build; run code-review and review-session; check acceptance criteria; produce a consolidated report; mark reviewed only when there are no blockers.
 ---
 
 # Review spec
 
-Verify the implementation on the current spec branch and mark it reviewed only when nothing blocks.
+Verify the implementation on the current spec branch and mark it reviewed only when nothing blocks. This operates on an **individual implementation spec** (a normal spec or an epic child), not on the epic container.
 
 ## Process
 
@@ -19,7 +19,7 @@ Verify the implementation on the current spec branch and mark it reviewed only w
 
 5. **Run `/review-session`.** Reflect on how the round went and implement any accepted improvements.
 
-6. **Verify acceptance criteria and tasks.** Confirm every acceptance criterion in the spec — and in each ticket when the spec is split — is met, with evidence from the diff or tests. A `met` behavior with no regression test where one is practical is `partial`.
+6. **Verify acceptance criteria.** Confirm every acceptance criterion in the spec is met, with evidence from the diff or tests. A `met` behavior with no regression test where one is practical is `partial`.
 
 7. **Produce a consolidated report.** Verification results, Standards findings, Spec findings plus the acceptance matrix, session-review improvements, and any blockers.
 
