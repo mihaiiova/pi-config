@@ -1,5 +1,5 @@
 /**
- * pi-sync — sync ~/dev/pi-config with GitHub + reconcile packages
+ * pi-sync — sync the pi-config repo with GitHub + reconcile packages
  *
  * Command: /pi-sync
  * Tool:    pi_sync (callable by LLM)
@@ -22,11 +22,14 @@ import {
 } from "@earendil-works/pi-tui";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { dirname, resolve, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ── Config ────────────────────────────────────────────────────
 
-const REPO_PATH = resolve(process.env.HOME!, "dev/pi-config");
+// Derive the repo root from this extension's own location instead of a
+// hardcoded path — pi-config is cloned to different locations per machine.
+const REPO_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SETTINGS_PATH = resolve(process.env.HOME!, ".pi/agent/settings.json");
 
 // ── Git helpers ────────────────────────────────────────────────
@@ -293,7 +296,7 @@ export default function piSync(pi: ExtensionAPI) {
     name: "pi_sync",
     label: "Pi Sync",
     description:
-      "Sync pi-config (~/dev/pi-config) with GitHub and reconcile installed pi packages. Call when the user asks to sync their pi config across machines.",
+      "Sync the pi-config repo with GitHub and reconcile installed pi packages. Call when the user asks to sync their pi config across machines.",
     parameters: Type.Object({}),
     async execute() {
       const gs = gitSync();
@@ -309,7 +312,7 @@ export default function piSync(pi: ExtensionAPI) {
           content: [
             {
               type: "text",
-              text: `Merge conflict! Files:\n${gs.conflictFiles!.map((f) => `  - ${f}`).join("\n")}\n\nAsk the user to resolve in ~/dev/pi-config, then re-run /pi-sync`,
+              text: `Merge conflict! Files:\n${gs.conflictFiles!.map((f) => `  - ${f}`).join("\n")}\n\nAsk the user to resolve in ${REPO_PATH}, then re-run /pi-sync`,
             },
           ],
           details: {},
@@ -357,7 +360,7 @@ export default function piSync(pi: ExtensionAPI) {
   // ── Command: /pi-sync ────────────────────────────────────
 
   pi.registerCommand("pi-sync", {
-    description: "Sync pi-config (~/dev/pi-config) with GitHub + reconcile packages",
+    description: "Sync the pi-config repo with GitHub + reconcile packages",
     handler: async (_args, ctx) => {
       // ── Git ────────────────────────────────────────────
 
@@ -366,7 +369,7 @@ export default function piSync(pi: ExtensionAPI) {
 
       if (gs.needsHelp) {
         ctx.ui.notify(
-          `Merge conflict! Files: ${gs.conflictFiles!.join(", ")}. Resolve in ~/dev/pi-config, then re-run /pi-sync`,
+          `Merge conflict! Files: ${gs.conflictFiles!.join(", ")}. Resolve in ${REPO_PATH}, then re-run /pi-sync`,
           "error",
         );
         return;
