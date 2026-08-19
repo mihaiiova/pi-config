@@ -1,12 +1,12 @@
 ---
 name: to-spec
-description: Turn the current conversation into a spec and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed.
+description: Turn the current conversation into a spec and publish it as a GitHub issue — no interview, just synthesis of what you've already discussed.
 disable-model-invocation: true
 ---
 
-This skill takes the current conversation context and codebase understanding and produces a spec (you may know this document as a PRD). Do NOT interview the user — just synthesize what you already know.
+This skill takes the current conversation context and codebase understanding and produces a spec (you may know this document as a PRD) and publishes it as a GitHub issue. Do NOT interview the user — just synthesize what you already know.
 
-The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
+Issues are tracked on GitHub via the `gh` CLI (it infers the repo from `git remote -v`). Run `/setup-matt-pocock-skills` if the triage label vocabulary has not been configured yet.
 
 ## Process
 
@@ -16,7 +16,7 @@ The issue tracker and triage label vocabulary should have been provided to you �
 
 Check with the user that these seams match their expectations.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the spec using the template below, then publish it as a GitHub issue with `gh issue create --title "..." --body-file <spec.md>`. Apply the `ready-for-agent` triage label - no need for additional triage.
 
 <spec-template>
 
