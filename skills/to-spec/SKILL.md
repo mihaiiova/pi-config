@@ -64,6 +64,10 @@ A list of testing decisions that were made. Include:
 - Which modules will be tested
 - Prior art for the tests (i.e. similar types of tests in the codebase)
 
+## Release impact
+
+One of `major`, `minor`, `patch`, or `none`, using SemVer: breaking behavior/API, backward-compatible user-facing capability, fix/internal improvement/docs/maintenance, or no independently releasable change.
+
 ## Out of Scope
 
 A description of the things that are out of scope for this spec.

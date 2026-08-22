@@ -15,10 +15,10 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 3. **Validate state and blockers.** A fresh spec must carry `spec:ready`. A resumed spec may carry `spec:in-progress`. If `## Blocked by` contains any still-open issue, refuse and report the blockers. If Testing Decisions do not contain a usable public testing seam, stop before touching the worktree and resolve that decision.
 
-4. **Determine and sync the base branch.** Read `spec.baseBranch` from `.pi/settings.json`; otherwise use the repository default. `git fetch origin`, then fast-forward the local base to its remote. Never invent or silently create a missing base branch.
+4. **Determine and sync the integration branch.** Read `spec.baseBranch` from `.pi/settings.json`, defaulting to `development`. Read `spec.releaseBranch` or use the repository default branch (`main` or `master`). Fetch first. If integration is missing locally and remotely, create it from the synced release branch and push it with upstream tracking. Otherwise track or fast-forward the existing branch. Never reset or recreate an existing integration branch; refuse on ambiguous or non-fast-forward history.
 
 5. **Resume or create the feature branch.** The canonical branch is `spec/<issue-number>-<slug>`.
-   - If neither local nor remote branch exists, create it from the synced base.
+   - If neither local nor remote branch exists, create it from the synced integration branch.
    - If it already exists and clearly belongs to this spec, check it out and resume it; if only remote exists, create the local tracking branch.
    - If a same-named branch exists but its history/issue references make ownership ambiguous, refuse and ask rather than overwriting it.
    - Never reset or recreate an existing spec branch just to make it match the base.

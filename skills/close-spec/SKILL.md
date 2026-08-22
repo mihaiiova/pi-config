@@ -1,6 +1,6 @@
 ---
 name: close-spec
-description: Finish accepted work. Merge and close an implementation spec, or explicitly close a completed epic once every child spec is done.
+description: Finish accepted work. Merge an implementation spec into the development integration branch and close it, or explicitly close a completed epic once every child spec is done.
 ---
 
 # Close spec
@@ -23,17 +23,19 @@ Stop after the epic case.
 
 1. **Require a successful review.** The spec must carry `spec:reviewed` (or an unambiguous current review report with no blockers). Refuse otherwise.
 
-2. **Merge into the configured base.** Resolve `spec.baseBranch` from `.pi/settings.json` or the repository default. Check it exists; never create a missing base branch implicitly. Check out and fast-forward it, then merge the canonical `spec/<id>-<slug>` branch with a merge commit and push the base branch.
+2. **Resolve the integration branch.** Read `spec.baseBranch` from `.pi/settings.json`, defaulting to `development`. Read `spec.releaseBranch` or use the repository default branch (`main` or `master`). Fetch first. If the integration branch is missing both locally and remotely, create it from the synced release branch and push it with upstream tracking. If it exists remotely, track and fast-forward it. Never reset or recreate an existing branch. Refuse if the release branch is missing, histories are ambiguous, or a local branch cannot be fast-forwarded safely.
 
-3. **Close the issue.** Close the spec issue with a comment referencing the merge commit.
+3. **Merge into integration.** Merge the canonical `spec/<id>-<slug>` branch into the integration branch with a merge commit and push. If the spec commit is already an ancestor of integration, treat the merge as complete and resume the remaining close steps instead of merging again.
 
-4. **Delete the branch only after merge and push succeed.** Delete the local branch, then the remote branch if present.
+4. **Close the issue.** Close the spec issue with a comment referencing the merge commit. If the issue is already closed with an integration commit that is still on the integration branch, reuse that evidence.
 
-5. **Transition to done.** A non-epic spec carries exactly one lifecycle-state label. Remove `spec:ready`, `spec:in-progress`, and `spec:reviewed`; apply `spec:done`.
+5. **Delete the branch only after merge and push succeed.** Delete the local branch, then the remote branch if present. Missing branches on a resumed run are already clean, not errors.
 
-6. **Update the parent epic, if any.** If the spec has a `## Parent` link:
+6. **Transition to done.** A non-epic spec carries exactly one lifecycle-state label. Remove `spec:ready`, `spec:in-progress`, and `spec:reviewed`; apply `spec:done`. Reapplying the already-correct state is a no-op.
+
+7. **Update the parent epic, if any.** If the spec has a `## Parent` link:
    - inspect sibling child specs;
    - for each sibling blocked by the newly closed spec, check whether all `## Blocked by` issues are now closed; when they are, transition that sibling to `spec:ready`;
    - if every child is now complete, report: `Epic #<n> now has all child specs complete. Run /close-spec #<n> to close the epic.`
 
-7. **Report.** Include merge commit, pushed base branch, closed issue, branch cleanup, siblings made ready, and any epic-complete status.
+8. **Report.** Include merge commit, pushed integration branch, closed issue, branch cleanup, siblings made ready, and any epic-complete status. Remind the user that `/release` promotes accumulated integration work to the release branch.

@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Quick recap of the main pi-config skills — the spec lifecycle (/new-spec, /start-spec, /review-spec, /close-spec) and the discovery skills (/review-backlog, /audit-codebase).
+description: Quick recap of the main pi-config skills — the spec lifecycle (/new-spec, /start-spec, /review-spec, /close-spec, /release) and the discovery skills (/review-backlog, /audit-codebase).
 ---
 
 # Workflow
@@ -15,6 +15,7 @@ description: Quick recap of the main pi-config skills — the spec lifecycle (/n
 - `/new-spec` — define a normal spec or an epic of child specs; publish via the trusted plan applier.
 - `/start-spec` — implement one spec with TDD (refuses epic containers).
 - `/review-spec` — verify one implementation (tests, code-review, acceptance criteria).
-- `/close-spec` — merge, close, clean up; updates parent-epic progress.
+- `/close-spec` — merge into development, close, clean up; updates parent-epic progress.
+- `/release` — verify and promote accumulated development work to main/master; update changelog/version, merge the PR, tag, and publish the GitHub release.
 
 See `docs/spec-lifecycle.md` for status labels, parent/child + blocker relationships, and branch naming.

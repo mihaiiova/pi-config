@@ -17,14 +17,15 @@ pi-config/
 
 ## Spec lifecycle
 
-Two discovery commands feed a four-stage lifecycle:
+Two discovery commands feed a five-stage lifecycle:
 
 - `/review-backlog` — review open issues against the code and recommend what product/project work to do next.
 - `/audit-codebase` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
 - `/new-spec` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
 - `/start-spec` — implement one spec with TDD (refuses epic containers).
-- `/review-spec` — verify one implementation.
-- `/close-spec` — merge, close, clean up; updates parent-epic progress.
+- `/review-spec` — run targeted tests first, then the practical regression/typecheck/lint/build gate and review one implementation.
+- `/close-spec` — merge into `development`, close, clean up; updates parent-epic progress.
+- `/release` — promote accumulated `development` work to `main`/`master` with release verification, changelog, version bump, PR, tag, and GitHub release.
 
 Example (normal):
 
@@ -33,6 +34,7 @@ Example (normal):
 /start-spec #120
 /review-spec
 /close-spec
+/release
 ```
 
 Example (epic):
@@ -48,7 +50,7 @@ Example (epic):
 /start-spec #202   …
 ```
 
-`/start-spec` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and base-branch configuration.
+`/start-spec` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, integration/release branches, verification tiers, release metadata, and configuration.
 
 ## How packages work
 

@@ -21,19 +21,20 @@ assert_not_contains() { ! grep -qF -- "$2" "$1" || fail "assert_not_contains '$1
 
 cat > "$work/spec-plan.json" <<'JSON'
 {
+  "plan_id": "test-spec-plan-001",
   "kind": "spec",
   "spec": {
     "id": "add-csv-export",
     "title": "Spec: Add CSV export",
     "body": "## Problem Statement\n\nUsers cannot export reports.\n\n## Solution\n\nAdd a CSV export button.\n\n## Testing Decisions\n\nTest at the export service seam.",
     "labels": []
-  },
-  "tickets": []
+  }
 }
 JSON
 
 cat > "$work/spec-with-tickets.json" <<'JSON'
 {
+  "plan_id": "test-spec-tickets-001",
   "kind": "spec",
   "spec": {
     "id": "add-reporting",
@@ -50,6 +51,7 @@ JSON
 
 cat > "$work/epic-plan.json" <<'JSON'
 {
+  "plan_id": "test-epic-plan-001",
   "kind": "epic",
   "epic": {
     "id": "content-ingestion",
@@ -83,7 +85,7 @@ run_validate_fail() {
 
 # ── 3. Validation: unknown dependency fails ──────────────────────
 cat > "$work/unknown-dep.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "test-unknown-dep-001", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": ["nope"] },
     { "id": "b", "title": "B", "body": "b", "labels": [], "blocked_by": [] }
@@ -93,7 +95,7 @@ run_validate_fail "$work/unknown-dep.json" "unknown dependency"
 
 # ── 4. Validation: dependency cycle fails ────────────────────────
 cat > "$work/cycle.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "test-cycle-001", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": ["b"] },
     { "id": "b", "title": "B", "body": "b", "labels": [], "blocked_by": ["a"] }
@@ -103,7 +105,7 @@ run_validate_fail "$work/cycle.json" "cycle or unsorted"
 
 # ── 5. Validation: duplicate ids fail ────────────────────────────
 cat > "$work/dup.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "test-duplicate-001", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": [] },
     { "id": "a", "title": "A2", "body": "b", "labels": [], "blocked_by": [] }
@@ -113,7 +115,7 @@ run_validate_fail "$work/dup.json" "duplicate id"
 
 # ── 6. Validation: one-ticket wrapper fails ──────────────────────
 cat > "$work/one-ticket.json" <<'JSON'
-{ "kind": "spec", "spec": { "id": "s", "title": "S", "body": "b", "labels": [] },
+{ "plan_id": "test-one-ticket-001", "kind": "spec", "spec": { "id": "s", "title": "S", "body": "b", "labels": [] },
   "tickets": [ { "id": "t", "title": "T", "body": "b", "labels": [], "blocked_by": [] } ] }
 JSON
 if "$validate" "$work/one-ticket.json" >/dev/null 2>&1; then
@@ -123,7 +125,7 @@ pass "one-ticket wrapper rejected"
 
 # ── 7. Validation: epic requires multiple children ───────────────
 cat > "$work/one-child.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "test-one-child-001", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [ { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": [] } ] }
 JSON
 if "$validate" "$work/one-child.json" >/dev/null 2>&1; then
@@ -135,7 +137,7 @@ pass "single-child epic rejected"
 state="$work/state-spec"; mkdir -p "$state"
 export FAKE_GH_STATE_DIR="$state" FAKE_GH_LOG="$state/calls.log" GH_TOKEN=test PI_REPOSITORY=owner/repo
 "$apply" "$work/spec-plan.json" > "$work/spec.out" || fail "apply spec should succeed"
-assert_contains "$work/spec.out" "plan applied: kind=spec"
+assert_contains "$work/spec.out" "kind=spec"
 [[ "$(grep -c -- 'issue create' "$state/calls.log")" == "1" ]] || fail "spec should create exactly one issue"
 assert_contains "$state/calls.log" "--add-label spec:ready"
 assert_not_contains "$state/calls.log" "spec:epic"
@@ -146,7 +148,7 @@ state="$work/state-epic"; mkdir -p "$state"
 export FAKE_GH_STATE_DIR="$state" FAKE_GH_LOG="$state/calls.log"
 unset FAKE_GH_FAIL_ON_CREATE
 "$apply" "$work/epic-plan.json" > "$work/epic.out" || fail "apply epic should succeed"
-assert_contains "$work/epic.out" "plan applied: kind=epic"
+assert_contains "$work/epic.out" "kind=epic"
 
 order_ok() { # first before second in calls.log
   local a="$1" b="$2" la lb
@@ -201,7 +203,7 @@ if "$apply" "$work/epic-plan.json" > "$work/partial.out" 2>"$work/partial.err"; 
   fail "partial apply should fail"
 fi
 assert_not_contains "$work/partial.out" "plan applied"
-[[ "$(find "$state" -name 'issue-*.json' | wc -l)" == "1" ]] || fail "partial run should stop after the failing create"
+[[ "$(find "$state" -name 'issue-*.json' | wc -l | tr -d ' ')" == "1" ]] || fail "partial run should stop after the failing create"
 pass "partial failure aborts without a complete signal"
 
 # ── 12. Skills declare required behaviors ────────────────────────
@@ -219,14 +221,32 @@ assert_contains "$close" "all child specs complete"
 assert_contains "$close" "Blocked by"
 pass "close-spec surfaces epic-complete state and clears blockers"
 
+assert_contains "$close" 'defaulting to `development`'
+assert_contains "$close" "create it from the synced release branch"
+assert_contains "$close" "already an ancestor"
+pass "close-spec bootstraps and idempotently integrates into development"
+
+review="$root/skills/review-spec/SKILL.md"
+assert_contains "$review" "Run targeted verification first"
+assert_contains "$review" "practical regression gate"
+assert_contains "$review" "typecheck, lint, build"
+pass "review-spec runs targeted checks before the full practical gate"
+
+release="$root/skills/release/SKILL.md"
+assert_contains "$release" "spec-driven changelog"
+assert_contains "$release" "Create or resume the pull request"
+assert_contains "$release" "Tag and publish exactly once"
+assert_contains "$release" "without duplicating commits, PRs, tags, or releases"
+pass "release skill covers resumable promotion and publication"
+
 audit="$root/skills/audit-codebase/SKILL.md"
 assert_contains "$audit" "read-only"
-assert_contains "$audit" "must not modify"
+assert_contains "$audit" "do not modify"
 assert_contains "$audit" "consolidate"
 pass "audit-codebase is read-only and consolidates"
 
 backlog="$root/skills/review-backlog/SKILL.md"
-assert_contains "$backlog" "do not mutate"
+assert_contains "$backlog" "Do not mutate"
 assert_contains "$backlog" "approval"
 pass "review-backlog does not mutate without approval"
 

@@ -57,9 +57,13 @@ case "$cmd" in
         fi
         body=""
         [[ -n "$body_file" ]] && body="$(cat "$body_file")"
-        jq -n --arg n "$next" --arg t "$title" --arg b "$body" \
+        labels_json='[]'
+        if [[ ${#labels[@]} -gt 0 ]]; then
+          labels_json="$(printf '%s\n' "${labels[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')"
+        fi
+        jq -n --arg n "$next" --arg t "$title" --arg b "$body" --argjson l "$labels_json" \
           --arg u "https://github.com/$repo/issues/$next" \
-          '{number:($n|tonumber), title:$t, body:$b, url:$u}' > "$STATE/issue-$next.json"
+          '{number:($n|tonumber), title:$t, body:$b, url:$u, labels:$l}' > "$STATE/issue-$next.json"
         printf 'https://github.com/%s/issues/%s\n' "$repo" "$next"
         ;;
       list)
@@ -69,17 +73,38 @@ case "$cmd" in
         if [[ ${#files[@]} -eq 0 ]]; then
           echo '[]'
         else
-          jq -s '[.[] | {number,title,body,url}]' "${files[@]}"
+          jq -s '[.[] | {number,title,body,url,labels}]' "${files[@]}"
         fi
+        ;;
+      view)
+        num="${args[2]}"
+        jq -c '.labels // []' "$STATE/issue-$num.json"
         ;;
       edit)
         num="${args[2]}"
-        body_file=""
+        body_file=""; title=""; add_label=""; remove_label=""
         for i in "${!args[@]}"; do
-          [[ "${args[$i]}" == "--body-file" ]] && body_file="${args[$((i+1))]}"
+          case "${args[$i]}" in
+            --body-file) body_file="${args[$((i+1))]}" ;;
+            --title) title="${args[$((i+1))]}" ;;
+            --add-label) add_label="${args[$((i+1))]}" ;;
+            --remove-label) remove_label="${args[$((i+1))]}" ;;
+          esac
         done
         if [[ -n "$body_file" ]]; then
           jq --arg b "$(cat "$body_file")" '.body = $b' "$STATE/issue-$num.json" > "$STATE/issue-$num.json.tmp"
+          mv "$STATE/issue-$num.json.tmp" "$STATE/issue-$num.json"
+        fi
+        if [[ -n "$title" ]]; then
+          jq --arg t "$title" '.title = $t' "$STATE/issue-$num.json" > "$STATE/issue-$num.json.tmp"
+          mv "$STATE/issue-$num.json.tmp" "$STATE/issue-$num.json"
+        fi
+        if [[ -n "$add_label" ]]; then
+          jq --arg l "$add_label" '.labels = (((.labels // []) + [$l]) | unique)' "$STATE/issue-$num.json" > "$STATE/issue-$num.json.tmp"
+          mv "$STATE/issue-$num.json.tmp" "$STATE/issue-$num.json"
+        fi
+        if [[ -n "$remove_label" ]]; then
+          jq --arg l "$remove_label" '.labels = [(.labels // [])[] | select(. != $l)]' "$STATE/issue-$num.json" > "$STATE/issue-$num.json.tmp"
           mv "$STATE/issue-$num.json.tmp" "$STATE/issue-$num.json"
         fi
         exit 0
