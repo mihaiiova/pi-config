@@ -128,6 +128,10 @@ A timed-out, tool-blocked, missing, or materially partial reviewer result is **n
 
 Make one fallback attempt using a smaller, focused packet limited to the changed subsystem or unresolved acceptance criteria. If the fallback also cannot complete, preserve any valid partial findings but list exactly what was not reviewed (files, requirements, or standards). Never report `0 findings` for an incomplete axis.
 
+### 8a. Retrieving fan-out outputs (workflowScript gotcha)
+
+When the two reviewers are launched via a single `workflowScript` call (`runs.all([...])`), the top-level subagent call's `Return` is `null`; the per-child outputs do **not** appear there. Recover each child's report from the run artifacts: `subagent({ action: "status", id: "<workflowRunId>" })` lists the child run ids, and each child's report is under `~/.pi/agent/sessions/.../subagent-artifacts/<childRunId>_reviewer_0_output.md` (or the async-run `events.jsonl`). Don't treat a `null` workflow Return as an empty review.
+
 ### 9. Aggregate
 
 Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Include the Spec acceptance-criteria matrix under `## Spec`. For an incomplete axis, label its heading `incomplete` and include the failure reason plus remaining unreviewed scope. Do **not** merge or rerank findings — the two axes are deliberately separate (see _Why two axes_).
