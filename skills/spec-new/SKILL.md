@@ -1,17 +1,17 @@
 ---
-name: new-spec
+name: spec-new
 description: Understand and define a piece of work end-to-end. Inspect the repository, interview for decisions with grill-me, decide between a single cohesive spec and an epic of child specs, and publish the resulting plan to GitHub via the trusted plan applier.
 ---
 
 # New spec
 
-Turn a feature request or idea into published, decision-complete implementation work. `/new-spec` owns **definition and planning only**. The atomic implementation unit is always a **spec**. An **epic** is only a planning container for multiple independently implementable specs.
+Turn a feature request or idea into published, decision-complete implementation work. `/spec-new` owns **definition and planning only**. The atomic implementation unit is always a **spec**. An **epic** is only a planning container for multiple independently implementable specs.
 
 ## Boundaries
 
-`/new-spec` must not:
+`/spec-new` must not:
 - edit product code
-- create an implementation branch (branching belongs to `/start-spec`)
+- create an implementation branch (branching belongs to `/spec-start`)
 - run `/tdd`, merge anything, or close implementation specs
 - create implementation tickets beneath a spec
 
@@ -31,7 +31,7 @@ It may inspect the codebase as deeply as needed to resolve design facts.
 
 4. **Capture decisions as they settle.** They become Implementation Decisions and Testing Decisions.
 
-5. **Synthesize specs.** Use `/to-spec`'s structure (Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope, Further Notes), skipping its publishing step. Testing Decisions must name the public seams `/tdd` will exercise. For an epic, every child is a complete spec suitable for `/start-spec` without another broad requirements interview.
+5. **Synthesize specs.** Use `/to-spec`'s structure (Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope, Further Notes), skipping its publishing step. Testing Decisions must name the public seams `/tdd` will exercise. For an epic, every child is a complete spec suitable for `/spec-start` without another broad requirements interview.
 
 6. **Generate a plan identity.** Every plan has an opaque `plan_id` generated once (UUID or similarly collision-resistant identifier). Reuse the same `plan_id` when resuming/re-running the same definition. Do not derive identity from a title or slug. Artifact `id` fields remain readable stable kebab-case identifiers within that plan.
 

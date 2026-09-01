@@ -1,18 +1,18 @@
 ---
-name: new-idea
+name: spec-draft
 description: Capture a shallow idea as one lightweight GitHub issue for later discussion, without starting the spec-definition process.
 ---
 
 # New idea
 
-Capture something worth remembering without pretending it is ready to build. `/new-idea` is intentionally cheap; `/new-spec` is where definition and commitment happen.
+Capture something worth remembering without pretending it is ready to build. `/spec-draft` is intentionally cheap; `/spec-new` is where definition and commitment happen.
 
 ## Boundaries
 
 - Create exactly one GitHub issue.
 - Do not create branches, child issues, specs, epics, acceptance criteria, implementation plans, or product-code changes.
 - Do not invoke `/to-spec`, `/tdd`, or architecture workflows.
-- Do not invoke `/grill-me` unless the user explicitly asks to discuss/define the idea now; if they do, hand off to `/new-spec` instead of expanding the idea issue in place.
+- Do not invoke `/grill-me` unless the user explicitly asks to discuss/define the idea now; if they do, hand off to `/spec-new` instead of expanding the idea issue in place.
 - Preserve the user's wording and uncertainty. Do not inflate a short thought into an elaborate feature proposal.
 
 ## Process
@@ -38,11 +38,11 @@ Capture something worth remembering without pretending it is ready to build. `/n
 
    ## Notes
 
-   Captured for later discussion. Run `/new-spec #<issue>` when this becomes worth defining.
+   Captured for later discussion. Run `/spec-new #<issue>` when this becomes worth defining.
    ```
 
 4. **Report the issue link/number and stop.** Do not continue into definition automatically.
 
 ## Lifecycle
 
-`/new-idea` → shallow `idea` issue → `/review-backlog` classifies it as `needs definition` when still relevant → `/new-spec #<issue>` turns it into decision-complete work.
+`/spec-draft` → shallow `idea` issue → `/spec-backlog` classifies it as `needs definition` when still relevant → `/spec-new #<issue>` turns it into decision-complete work.

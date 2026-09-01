@@ -6,7 +6,7 @@ See [README.md](README.md) for the full structure and setup guide.
 
 ## Spec lifecycle
 
-Take work from idea to merged branch. Discover with `/review-backlog` (product work) and `/audit-codebase` (technical work), then define with `/new-spec` (normal spec or epic), implement with `/start-spec`, verify with `/review-spec`, and integrate with `/close-spec`. Status persists as a GitHub label (`spec:epic`, `spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`). See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for the full vocabulary, epic structure, and branch/base-branch conventions.
+Take work from idea to merged branch. Discover with `/spec-backlog` (product work) and `/spec-audit` (technical work), then define with `/spec-new` (normal spec or epic), implement with `/spec-start`, verify with `/spec-review`, and integrate with `/spec-close`. Status persists as a GitHub label (`spec:epic`, `spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`). See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for the full vocabulary, epic structure, and branch/base-branch conventions.
 
 ## Creating new extensions or skills
 

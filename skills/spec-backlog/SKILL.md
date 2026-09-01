@@ -1,5 +1,5 @@
 ---
-name: review-backlog
+name: spec-backlog
 description: Whole-project work-queue review. Inspect open issues across product and technical work, compare claims against current code where useful, classify readiness and value, and recommend what to do next without mutating GitHub until approved.
 ---
 
@@ -25,14 +25,14 @@ Review the project's entire open work queue and recommend what to do next. This 
 
 5. **Understand dependencies.** Distinguish parent/child structure from blocker/dependency. Highlight which epic children are currently startable.
 
-6. **Recommend the next plan.** Prioritize across all known work, including technical initiatives previously surfaced by `/audit-codebase`. Explain why the top item wins on value, readiness, unblock leverage, risk, and scope. Avoid fake numeric precision.
+6. **Recommend the next plan.** Prioritize across all known work, including technical initiatives previously surfaced by `/spec-audit`. Explain why the top item wins on value, readiness, unblock leverage, risk, and scope. Avoid fake numeric precision.
 
 7. **Recommend cleanup.** For duplicates and obsolete issues, propose exact close/merge/relabel actions but wait for approval.
 
 ## Relationship to other skills
 
-- `/new-idea` captures shallow thoughts for later.
-- `/audit-codebase` discovers technical problems not yet represented in the work queue.
-- `/review-backlog` decides priority across the resulting full queue.
-- `needs definition` → `/new-spec`.
-- `ready to start` → `/start-spec`.
+- `/spec-draft` captures shallow thoughts for later.
+- `/spec-audit` discovers technical problems not yet represented in the work queue.
+- `/spec-backlog` decides priority across the resulting full queue.
+- `needs definition` → `/spec-new`.
+- `ready to start` → `/spec-start`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Apply a validated /new-spec plan to GitHub.
+# Apply a validated /spec-new plan to GitHub.
 # - validates before mutation
 # - specs are the only implementation units
 # - creates epic children in dependency-safe order
@@ -16,7 +16,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PI_REPOSITORY="${PI_REPOSITORY:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
 [[ -n "$PI_REPOSITORY" ]] || { echo "apply-plan: could not determine repository" >&2; exit 1; }
 
-trap 'c=$?; if [[ $c -ne 0 ]]; then echo "apply-plan: failed (exit $c). Re-run /new-spec with the same plan_id to resume; existing artifacts will be reused and converged." >&2; fi' ERR
+trap 'c=$?; if [[ $c -ne 0 ]]; then echo "apply-plan: failed (exit $c). Re-run /spec-new with the same plan_id to resume; existing artifacts will be reused and converged." >&2; fi' ERR
 
 kind="$(jq -r '.kind' "$plan")"
 plan_id="$(jq -r '.plan_id' "$plan")"

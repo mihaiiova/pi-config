@@ -19,36 +19,36 @@ pi-config/
 
 Two discovery commands feed a four-stage lifecycle:
 
-- `/review-backlog` — review open issues against the code and recommend what product/project work to do next.
-- `/audit-codebase` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
-- `/new-spec` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
-- `/start-spec` — implement one spec with TDD (refuses epic containers).
-- `/review-spec` — verify one implementation.
-- `/close-spec` — merge, close, clean up; updates parent-epic progress.
+- `/spec-backlog` — review open issues against the code and recommend what product/project work to do next.
+- `/spec-audit` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
+- `/spec-new` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
+- `/spec-start` — implement one spec with TDD (refuses epic containers).
+- `/spec-review` — verify one implementation.
+- `/spec-close` — merge, close, clean up; updates parent-epic progress.
 
 Example (normal):
 
 ```text
-/new-spec "Add CSV export"      → Spec #120
-/start-spec #120
-/review-spec
-/close-spec
+/spec-new "Add CSV export"      → Spec #120
+/spec-start #120
+/spec-review
+/spec-close
 ```
 
 Example (epic):
 
 ```text
-/new-spec "Rework content ingestion"
+/spec-new "Rework content ingestion"
 → Epic #200
    → Spec #201
    → Spec #202 (blocked by #201)
    → Spec #203 (blocked by #201)
 
-/start-spec #201   … /close-spec
-/start-spec #202   …
+/spec-start #201   … /spec-close
+/spec-start #202   …
 ```
 
-`/start-spec` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and base-branch configuration.
+`/spec-start` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and base-branch configuration.
 
 ## How packages work
 

@@ -128,9 +128,14 @@ A timed-out, tool-blocked, missing, or materially partial reviewer result is **n
 
 Make one fallback attempt using a smaller, focused packet limited to the changed subsystem or unresolved acceptance criteria. If the fallback also cannot complete, preserve any valid partial findings but list exactly what was not reviewed (files, requirements, or standards). Never report `0 findings` for an incomplete axis.
 
-### 8a. Retrieving fan-out outputs (workflowScript gotcha)
+### 8a. Retrieving fan-out outputs (fan-out gotcha)
 
-When the two reviewers are launched via a single `workflowScript` call (`runs.all([...])`), the top-level subagent call's `Return` is `null`; the per-child outputs do **not** appear there. Recover each child's report from the run artifacts: `subagent({ action: "status", id: "<workflowRunId>" })` lists the child run ids, and each child's report is under `~/.pi/agent/sessions/.../subagent-artifacts/<childRunId>_reviewer_0_output.md` (or the async-run `events.jsonl`). Don't treat a `null` workflow Return as an empty review.
+Parallel reviewer fan-out (whether via a single `workflowScript` `runs.all([...])` or several `subagent({ agent, task })` calls) detaches into async workflow runs, and the inline `Return` is truncated/`null` — the per-child reports do **not** appear there in full. Recover each child's full report from the run artifacts:
+
+1. `subagent({ action: "status", id: "<workflowId>" })` prints the run `Dir` (e.g. `/tmp/pi-subagents-uid-1000/async-subagent-runs/<workflowId>`) plus the child run id.
+2. Read `<Dir>/status.json`; the full child output is at JSON path `workflow.value.output` (the async-run `events.jsonl` only carries control events, not the report).
+
+Don't treat a null/truncated workflow Return as an empty review.
 
 ### 9. Aggregate
 

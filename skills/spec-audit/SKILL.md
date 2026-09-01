@@ -1,11 +1,11 @@
 ---
-name: audit-codebase
+name: spec-audit
 description: Read-only whole-repository technical health audit. Orchestrates code-review, codebase-design, improve-codebase-architecture, and relevant stack-specific skills, then consolidates findings into prioritized technical initiatives.
 ---
 
 # Audit codebase
 
-A read-only whole-repository technical health audit. It discovers technical problems that may not yet exist in the backlog. `/review-backlog` remains the final prioritization layer across product and technical work.
+A read-only whole-repository technical health audit. It discovers technical problems that may not yet exist in the backlog. `/spec-backlog` remains the final prioritization layer across product and technical work.
 
 ## Boundaries
 
@@ -62,12 +62,12 @@ Consolidate raw findings into a small number of technical initiatives. For each 
 - suggested next action
 
 Before suggesting a new issue, search existing open issues for the same technical work. Suggested next action is usually one of:
-- `/new-spec <existing issue>`
-- `/new-idea <summary>` when the finding is worth recording but not ready to define
-- create an issue, then `/new-spec`
+- `/spec-new <existing issue>`
+- `/spec-draft <summary>` when the finding is worth recording but not ready to define
+- create an issue, then `/spec-new`
 - fix opportunistically
 - no action
 
-End with a single **Top technical recommendation** and why it has the strongest technical leverage. Make clear that `/review-backlog` may still prioritize other known work ahead of it.
+End with a single **Top technical recommendation** and why it has the strongest technical leverage. Make clear that `/spec-backlog` may still prioritize other known work ahead of it.
 
-Architecture changes follow the normal lifecycle: `/audit-codebase` discovers → `/new-spec` defines → `/start-spec` implements → `/review-spec` verifies → `/close-spec` integrates.
+Architecture changes follow the normal lifecycle: `/spec-audit` discovers → `/spec-new` defines → `/spec-start` implements → `/spec-review` verifies → `/spec-close` integrates.

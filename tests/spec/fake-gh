@@ -84,6 +84,12 @@ case "$cmd" in
         fi
         exit 0
         ;;
+      view)
+        # `gh issue view <num> --json labels --jq '...'` — fake-gh does not
+        # persist label state, so report no labels (fresh issues carry none).
+        echo '[]'
+        exit 0
+        ;;
       *)
         echo "fake gh: unsupported issue subcommand: $sub" >&2; exit 2 ;;
     esac

@@ -21,35 +21,20 @@ assert_not_contains() { ! grep -qF -- "$2" "$1" || fail "assert_not_contains '$1
 
 cat > "$work/spec-plan.json" <<'JSON'
 {
+  "plan_id": "plan-spec-add-csv-export",
   "kind": "spec",
   "spec": {
     "id": "add-csv-export",
     "title": "Spec: Add CSV export",
     "body": "## Problem Statement\n\nUsers cannot export reports.\n\n## Solution\n\nAdd a CSV export button.\n\n## Testing Decisions\n\nTest at the export service seam.",
     "labels": []
-  },
-  "tickets": []
-}
-JSON
-
-cat > "$work/spec-with-tickets.json" <<'JSON'
-{
-  "kind": "spec",
-  "spec": {
-    "id": "add-reporting",
-    "title": "Spec: Add reporting",
-    "body": "## Problem Statement\n\nReporting.\n\n## Solution\n\nReporting UI + backend.",
-    "labels": []
-  },
-  "tickets": [
-    { "id": "reporting-api", "title": "Reporting API", "body": "Backend endpoint.", "labels": [], "blocked_by": [] },
-    { "id": "reporting-ui", "title": "Reporting UI", "body": "Frontend.", "labels": [], "blocked_by": ["reporting-api"] }
-  ]
+  }
 }
 JSON
 
 cat > "$work/epic-plan.json" <<'JSON'
 {
+  "plan_id": "plan-epic-content-ingestion",
   "kind": "epic",
   "epic": {
     "id": "content-ingestion",
@@ -83,7 +68,7 @@ run_validate_fail() {
 
 # ── 3. Validation: unknown dependency fails ──────────────────────
 cat > "$work/unknown-dep.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "plan-unknown-dependency", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": ["nope"] },
     { "id": "b", "title": "B", "body": "b", "labels": [], "blocked_by": [] }
@@ -93,7 +78,7 @@ run_validate_fail "$work/unknown-dep.json" "unknown dependency"
 
 # ── 4. Validation: dependency cycle fails ────────────────────────
 cat > "$work/cycle.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "plan-dependency-cycle", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": ["b"] },
     { "id": "b", "title": "B", "body": "b", "labels": [], "blocked_by": ["a"] }
@@ -103,7 +88,7 @@ run_validate_fail "$work/cycle.json" "cycle or unsorted"
 
 # ── 5. Validation: duplicate ids fail ────────────────────────────
 cat > "$work/dup.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "plan-duplicate-ids", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [
     { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": [] },
     { "id": "a", "title": "A2", "body": "b", "labels": [], "blocked_by": [] }
@@ -113,7 +98,7 @@ run_validate_fail "$work/dup.json" "duplicate id"
 
 # ── 6. Validation: one-ticket wrapper fails ──────────────────────
 cat > "$work/one-ticket.json" <<'JSON'
-{ "kind": "spec", "spec": { "id": "s", "title": "S", "body": "b", "labels": [] },
+{ "plan_id": "plan-one-ticket", "kind": "spec", "spec": { "id": "s", "title": "S", "body": "b", "labels": [] },
   "tickets": [ { "id": "t", "title": "T", "body": "b", "labels": [], "blocked_by": [] } ] }
 JSON
 if "$validate" "$work/one-ticket.json" >/dev/null 2>&1; then
@@ -123,7 +108,7 @@ pass "one-ticket wrapper rejected"
 
 # ── 7. Validation: epic requires multiple children ───────────────
 cat > "$work/one-child.json" <<'JSON'
-{ "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
+{ "plan_id": "plan-one-child", "kind": "epic", "epic": { "id": "e", "title": "E", "body": "b", "labels": [] },
   "specs": [ { "id": "a", "title": "A", "body": "b", "labels": [], "blocked_by": [] } ] }
 JSON
 if "$validate" "$work/one-child.json" >/dev/null 2>&1; then
@@ -135,7 +120,7 @@ pass "single-child epic rejected"
 state="$work/state-spec"; mkdir -p "$state"
 export FAKE_GH_STATE_DIR="$state" FAKE_GH_LOG="$state/calls.log" GH_TOKEN=test PI_REPOSITORY=owner/repo
 "$apply" "$work/spec-plan.json" > "$work/spec.out" || fail "apply spec should succeed"
-assert_contains "$work/spec.out" "plan applied: kind=spec"
+assert_contains "$work/spec.out" "plan applied: plan_id=plan-spec-add-csv-export kind=spec"
 [[ "$(grep -c -- 'issue create' "$state/calls.log")" == "1" ]] || fail "spec should create exactly one issue"
 assert_contains "$state/calls.log" "--add-label spec:ready"
 assert_not_contains "$state/calls.log" "spec:epic"
@@ -146,7 +131,7 @@ state="$work/state-epic"; mkdir -p "$state"
 export FAKE_GH_STATE_DIR="$state" FAKE_GH_LOG="$state/calls.log"
 unset FAKE_GH_FAIL_ON_CREATE
 "$apply" "$work/epic-plan.json" > "$work/epic.out" || fail "apply epic should succeed"
-assert_contains "$work/epic.out" "plan applied: kind=epic"
+assert_contains "$work/epic.out" "plan applied: plan_id=plan-epic-content-ingestion kind=epic"
 
 order_ok() { # first before second in calls.log
   local a="$1" b="$2" la lb
@@ -205,30 +190,30 @@ assert_not_contains "$work/partial.out" "plan applied"
 pass "partial failure aborts without a complete signal"
 
 # ── 12. Skills declare required behaviors ────────────────────────
-start="$root/skills/start-spec/SKILL.md"
+start="$root/skills/spec-start/SKILL.md"
 assert_contains "$start" "epic"
 assert_contains "$start" "refuse"
-pass "start-spec refuses an epic container"
+pass "spec-start refuses an epic container"
 
 assert_contains "$start" "Blocked by"
 assert_contains "$start" "spec:ready"
-pass "start-spec allows ready children and refuses blocked ones"
+pass "spec-start allows ready children and refuses blocked ones"
 
-close="$root/skills/close-spec/SKILL.md"
+close="$root/skills/spec-close/SKILL.md"
 assert_contains "$close" "all child specs complete"
 assert_contains "$close" "Blocked by"
-pass "close-spec surfaces epic-complete state and clears blockers"
+pass "spec-close surfaces epic-complete state and clears blockers"
 
-audit="$root/skills/audit-codebase/SKILL.md"
+audit="$root/skills/spec-audit/SKILL.md"
 assert_contains "$audit" "read-only"
-assert_contains "$audit" "must not modify"
+assert_contains "$audit" "do not modify"
 assert_contains "$audit" "consolidate"
-pass "audit-codebase is read-only and consolidates"
+pass "spec-audit is read-only and consolidates"
 
-backlog="$root/skills/review-backlog/SKILL.md"
-assert_contains "$backlog" "do not mutate"
+backlog="$root/skills/spec-backlog/SKILL.md"
+assert_contains "$backlog" "Do not mutate"
 assert_contains "$backlog" "approval"
-pass "review-backlog does not mutate without approval"
+pass "spec-backlog does not mutate without approval"
 
 echo
 echo "All spec-orchestration tests passed."

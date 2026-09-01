@@ -1,5 +1,5 @@
 ---
-name: close-spec
+name: spec-close
 description: Finish accepted work. Merge and close an implementation spec, or explicitly close a completed epic once every child spec is done.
 ---
 
@@ -34,6 +34,6 @@ Stop after the epic case.
 6. **Update the parent epic, if any.** If the spec has a `## Parent` link:
    - inspect sibling child specs;
    - for each sibling blocked by the newly closed spec, check whether all `## Blocked by` issues are now closed; when they are, transition that sibling to `spec:ready`;
-   - if every child is now complete, report: `Epic #<n> now has all child specs complete. Run /close-spec #<n> to close the epic.`
+   - if every child is now complete, report: `Epic #<n> now has all child specs complete. Run /spec-close #<n> to close the epic.`
 
 7. **Report.** Include merge commit, pushed base branch, closed issue, branch cleanup, siblings made ready, and any epic-complete status.

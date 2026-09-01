@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate a /new-spec plan before any GitHub mutation.
+# Validate a /spec-new plan before any GitHub mutation.
 # Atomic implementation units are specs. Plans are either:
 #   { "plan_id", "kind":"spec", "spec":{...} }
 #   { "plan_id", "kind":"epic", "epic":{...}, "specs":[...] }

@@ -1,5 +1,5 @@
 ---
-name: review-spec
+name: spec-review
 description: Verify a completed implementation of one spec. Run project checks, code-review and review-session, verify acceptance criteria, and transition to reviewed only when there are no blockers.
 ---
 
@@ -23,4 +23,4 @@ Verify the implementation on the current spec branch and mark it reviewed only w
 
 7. **Produce a consolidated report.** Include verification, Standards, Spec matrix, session-review outcomes, and any blockers.
 
-8. **Transition state.** Only with no blockers, make `spec:reviewed` the spec's sole lifecycle-state label: remove `spec:ready`, `spec:in-progress`, and `spec:done`, then apply `spec:reviewed`. If blockers remain, leave the current state unchanged and list exactly what must be resolved before `/close-spec`.
+8. **Transition state.** Only with no blockers, make `spec:reviewed` the spec's sole lifecycle-state label: remove `spec:ready`, `spec:in-progress`, and `spec:done`, then apply `spec:reviewed`. If blockers remain, leave the current state unchanged and list exactly what must be resolved before `/spec-close`.

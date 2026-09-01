@@ -1,5 +1,5 @@
 ---
-name: start-spec
+name: spec-start
 description: Begin implementing a ready spec. Refuse epic containers, present their startable children, validate readiness and blockers, resume or create the spec branch, mark it in progress, and implement with tdd.
 ---
 
@@ -27,4 +27,4 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 7. **Implement with `/tdd`.** Work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Create coherent checkpoint commits referencing the spec issue.
 
-8. **Leave the branch unmerged.** Do not merge or push the base branch. `/review-spec` verifies the implementation and `/close-spec` integrates it.
+8. **Leave the branch unmerged.** Do not merge or push the base branch. `/spec-review` verifies the implementation and `/spec-close` integrates it.
