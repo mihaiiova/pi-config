@@ -11,9 +11,11 @@ Verify the implementation on the current spec branch and mark it reviewed only w
 
 1. **Confirm target and work.** Refuse `spec:epic`. The target should be `spec:in-progress` (or clearly be a resumed in-progress implementation) and have commits or working-tree changes on `spec/<id>-<slug>`. If there is nothing to review, stop.
 
-2. **Run verification.** Discover and run the project's relevant tests, typecheck, lint, build, and static analysis using the narrowest useful commands. Record each command and outcome. If one cannot run, record why.
+   **Run in a fresh session.** Everything needed — branch, diff, spec — is recoverable from git and the spec issue, so do not rely on conversation history. If this session carried the implementation work, ask the user to run `/new` and then `/spec-review` before proceeding. In a fresh session, derive the target from the checked-out branch (`git branch --show-current` → `spec/<id>-<slug>` → issue `<id>`) and the diff from `git diff <base>...HEAD`.
 
-3. **Run `/code-review`.** Review the diff between the configured base branch and the spec branch. Treat the spec issue as the spec source. Capture Standards findings, Spec findings, and the acceptance-criteria matrix.
+2. **Run verification.** Discover and run the project's relevant tests, typecheck, lint, build, and static analysis using the narrowest useful commands. Capture pass/fail for each and **paste only failures** (tail-limited to ~40 lines); for passing checks, record `passed` and move on. If one cannot run, record why.
+
+3. **Run `/code-review`.** Review the diff between the configured base branch and the spec branch. Treat the spec issue as the spec source. Pass the step-2 verification results to `/code-review` so validation is not re-run. Capture Standards findings, Spec findings, and the acceptance-criteria matrix.
 
 4. **Resolve blockers.** Fix documented-standard violations and spec gaps that belong to the agreed scope. Treat heuristic smells as judgement calls; fix them only when they improve the change without scope creep. Re-run affected checks.
 

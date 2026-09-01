@@ -62,29 +62,16 @@ The Spec reviewer must validate and return this matrix. Evidence must name a cha
 
 Anything in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
 
-On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below — a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
+On top of whatever the repo documents, the Standards axis always carries the **smell baseline** — a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. It lives in [references/smell-baseline.md](references/smell-baseline.md). Two rules bind it:
 
 - **The repo overrides.** A documented repo standard always wins; where it endorses something the baseline would flag, suppress the smell.
 - **Always a judgement call.** Each smell is a labelled heuristic ("possible Feature Envy"), never a hard violation — and, like any standard here, skip anything tooling already enforces.
 
-Each smell reads *what it is* → *how to fix*; match it against the diff:
-
-- **Mysterious Name** — a function, variable, or type whose name doesn't reveal what it does or holds. → rename it; if no honest name comes, the design's murky.
-- **Duplicated Code** — the same logic shape appears in more than one hunk or file in the change. → extract the shared shape, call it from both.
-- **Feature Envy** — a method that reaches into another object's data more than its own. → move the method onto the data it envies.
-- **Data Clumps** — the same few fields or params keep travelling together (a type wanting to be born). → bundle them into one type, pass that.
-- **Primitive Obsession** — a primitive or string standing in for a domain concept that deserves its own type. → give the concept its own small type.
-- **Repeated Switches** — the same `switch`/`if`-cascade on the same type recurs across the change. → replace with polymorphism, or one map both sites share.
-- **Shotgun Surgery** — one logical change forces scattered edits across many files in the diff. → gather what changes together into one module.
-- **Divergent Change** — one file or module is edited for several unrelated reasons. → split so each module changes for one reason.
-- **Speculative Generality** — abstraction, parameters, or hooks added for needs the spec doesn't have. → delete it; inline back until a real need shows.
-- **Message Chains** — long `a.b().c().d()` navigation the caller shouldn't depend on. → hide the walk behind one method on the first object.
-- **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
-- **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
+Point reviewers at that file by absolute path (resolve it relative to this SKILL.md) instead of pasting the baseline into their prompts.
 
 ### 5. Gather validation evidence
 
-Before delegation, run the smallest relevant non-destructive validation commands for the selected scope when practical (for example, targeted tests, typecheck, lint, or build). Record each command and its outcome. If validation cannot run, record why; do not imply that it passed.
+Before delegation, run the smallest relevant non-destructive validation commands for the selected scope when practical (for example, targeted tests, typecheck, lint, or build). Record each command and its outcome; paste only failures, tail-limited. If the caller already ran validation and passes results, reuse them instead of re-running. If validation cannot run, record why; do not imply that it passed.
 
 Reviewers assess code and coverage gaps, but validation output is evidence, not a substitute for review.
 
@@ -99,19 +86,19 @@ Before spawning reviewers, assemble a packet containing:
 - commit list when applicable;
 - the relevant patch hunks (or a readable patch artifact and its path);
 - the spec text or path; and
-- standards-source paths plus the smell baseline; and
+- standards-source paths plus the smell-baseline reference path; and
 - validation commands, outcomes, and any known limitations.
 
 For a large diff, split the patch by subsystem and give each reviewer only the subsystem-relevant hunks, while still including the complete changed-file list. State explicitly when a reviewer receives a subset. If the packet cannot fit inline, save it to a readable artifact and provide the artifact path; verify the target reviewer can read it before launching.
 
-### 7. Spawn both sub-agents in parallel
+### 7. Spawn reviewers
 
-Send a single message with two `Agent` tool calls. Use the `general-purpose` subagent for both.
+Choose one or two `reviewer` sub-agents by diff size. Get the size with `git diff --shortstat <ref>...HEAD` (working-tree equivalent: `git diff --shortstat HEAD` plus `git diff --cached --shortstat HEAD`). If total insertions+deletions is under ~200, send **one** `reviewer` covering both axes; otherwise send **two** `reviewer` sub-agents in parallel.
 
 **Standards sub-agent prompt** — include:
 
 - The self-contained review packet: selected mode, resolved refs, exact diff command(s), changed-file list/stat, commit list when applicable, and relevant patch hunks or an accessible patch artifact. For `--codebase`, provide the checked-out commit and requested audit scope.
-- The list of standards-source files found in step 4, **plus the smell baseline from step 4** pasted in full — the sub-agent has no other access to it.
+- The list of standards-source files found in step 4, plus the **absolute path** to `references/smell-baseline.md` (resolve it relative to this SKILL.md) — the reviewer reads it directly; do not paste the baseline inline.
 - The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
 
 **Spec sub-agent prompt** — include:
@@ -120,13 +107,15 @@ Send a single message with two `Agent` tool calls. Use the `general-purpose` sub
 - The path or fetched contents of the spec and the parent-built acceptance-criteria matrix.
 - The brief: "Return the acceptance-criteria matrix with evidence and status first. Then report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. A practical behavior without regression-test evidence is partial. Under 400 words."
 
+For a single reviewer, combine both briefs and require the acceptance-criteria matrix plus Standards and Spec findings under separate headings.
+
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
 ### 8. Handle incomplete reviewer results
 
 A timed-out, tool-blocked, missing, or materially partial reviewer result is **not** a clean review. Mark that axis `incomplete` and state why.
 
-Make one fallback attempt using a smaller, focused packet limited to the changed subsystem or unresolved acceptance criteria. If the fallback also cannot complete, preserve any valid partial findings but list exactly what was not reviewed (files, requirements, or standards). Never report `0 findings` for an incomplete axis.
+Make one fallback attempt using a **minimal** packet — only the unresolved acceptance criteria or the specific subsystem in question, never the full diff/spec/standards again. If the fallback also cannot complete, preserve any valid partial findings but list exactly what was not reviewed (files, requirements, or standards). Never report `0 findings` for an incomplete axis.
 
 ### 8a. Retrieving fan-out outputs (fan-out gotcha)
 
