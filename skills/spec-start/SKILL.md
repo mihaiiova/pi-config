@@ -11,6 +11,8 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 1. **Load the issue.** Take the target by issue number, URL, or path. Read the body and comments.
 
+   **Run in a fresh session.** Everything needed — issue, branch, code — is recoverable from git and the spec issue, so do not rely on conversation history. If this session carried `/spec-new`, ask the user to run `/new` and then `/spec-start` before proceeding.
+
 2. **Refuse an epic container.** If the issue carries `spec:epic` (or clearly has the epic structure), do not implement it. Report that it is an epic and list its child specs, highlighting currently startable children after checking blockers. Stop.
 
 3. **Validate state and blockers.** A fresh spec must carry `spec:ready`. A resumed spec may carry `spec:in-progress`. If `## Blocked by` contains any still-open issue, refuse and report the blockers. If Testing Decisions do not contain a usable public testing seam, stop before touching the worktree and resolve that decision.
@@ -25,6 +27,6 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 6. **Transition to in progress.** Treat lifecycle labels as a state machine: a non-epic spec carries exactly one of `spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`. When starting fresh, remove other lifecycle-state labels and apply `spec:in-progress`. When resuming an already `spec:in-progress` spec, leave the state unchanged.
 
-7. **Implement with `/tdd`.** Work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Create coherent checkpoint commits referencing the spec issue.
+7. **Implement with `/tdd`.** Work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Run the narrowest test command per cycle and paste only failures (tail-limited); record passing runs as `passed` without pasting output. Don't rewrite code that already passes. Create coherent checkpoint commits referencing the spec issue.
 
 8. **Leave the branch unmerged.** Do not merge or push the base branch. `/spec-review` verifies the implementation and `/spec-close` integrates it.

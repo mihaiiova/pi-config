@@ -33,4 +33,7 @@ Ask: "What's the public interface, and which seams should we test?"
 
 - **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
+- **Run the narrowest test command.** For both the red and green run, execute the single test you just wrote (`pytest path::test_name`, `jest path -t name`), never the whole suite. One red run and one green run per cycle.
+- **Paste only failures.** Paste the failing assertion/traceback, tail-limited to ~40 lines; record a passing run as `passed` without pasting its output.
+- **Don't rewrite working code.** When the slice is green, stop and commit — do not re-generate or refactor code that already passes; the next slice builds on it.
 - **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle.
