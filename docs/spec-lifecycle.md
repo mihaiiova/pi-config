@@ -12,6 +12,7 @@ The workflow separates cheap capture/discovery from definition and implementatio
 /spec-start    → implement one spec (TDD)
 /spec-review   → verify one implementation
 /spec-close    → merge/close one spec, or close a completed epic
+/spec-cost     → report per-skill cost (main agent + sub-agents)
 ```
 
 Lower-level skills remain available as primitives: `grill-me`/`grilling`, `to-spec`, `tdd`, `code-review`, `codebase-design`, `domain-modeling`, `improve-codebase-architecture`, `review-session`.

@@ -16,5 +16,6 @@ description: Quick recap of the main pi-config skills — the spec lifecycle (/s
 - `/spec-start` — implement one spec with TDD (refuses epic containers).
 - `/spec-review` — verify one implementation (tests, code-review, acceptance criteria).
 - `/spec-close` — merge, close, clean up; updates parent-epic progress.
+- `/spec-cost` — report how much each spec skill cost (main agent + sub-agents).
 
 See `docs/spec-lifecycle.md` for status labels, parent/child + blocker relationships, and branch naming.

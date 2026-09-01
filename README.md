@@ -25,6 +25,7 @@ Two discovery commands feed a four-stage lifecycle:
 - `/spec-start` — implement one spec with TDD (refuses epic containers).
 - `/spec-review` — verify one implementation.
 - `/spec-close` — merge, close, clean up; updates parent-epic progress.
+- `/spec-cost` — report how much each spec skill cost (main agent + sub-agents).
 
 Example (normal):
 
