@@ -119,7 +119,9 @@ Make one fallback attempt using a **minimal** packet — only the unresolved acc
 
 ### 8a. Retrieving fan-out outputs (fan-out gotcha)
 
-Parallel reviewer fan-out (whether via a single `workflowScript` `runs.all([...])` or several `subagent({ agent, task })` calls) detaches into async workflow runs, and the inline `Return` is truncated/`null` — the per-child reports do **not** appear there in full. Recover each child's full report from the run artifacts:
+**Prefer file-backed outputs.** When fanning out reviewer children through a `workflowScript` (`runs.all`/`runs.run`) or parallel `subagent` calls, give every child an explicit `output` file (absolute path, unique per child, e.g. `/tmp/code-review-<runId>-standards.md`) and do **not** rely on the inline `Return` — for fan-out it is truncated/`null`. After the run completes, the orchestrator reads each child's file directly; file contents are never truncated. Keep the inline `Return` to just the output paths.
+
+If children were launched without output files, the inline `Return` of a parallel fan-out is truncated/`null` — the per-child reports do **not** appear there in full. Recover each child's full report from the run artifacts:
 
 1. `subagent({ action: "status", id: "<workflowId>" })` prints the run `Dir` (e.g. `/tmp/pi-subagents-uid-1000/async-subagent-runs/<workflowId>`) plus the child run id.
 2. Read `<Dir>/status.json`; the full child output is at JSON path `workflow.value.output` (the async-run `events.jsonl` only carries control events, not the report).
