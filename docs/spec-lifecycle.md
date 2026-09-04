@@ -3,6 +3,7 @@
 The workflow separates cheap capture/discovery from definition and implementation.
 
 ```text
+/spec-init     → one-time setup: generate .pi/settings.json
 /spec-draft    → remember a shallow thought for later
 /spec-backlog  → prioritize the full known work queue
 /spec-audit    → discover technical problems not yet represented
@@ -12,6 +13,8 @@ The workflow separates cheap capture/discovery from definition and implementatio
 /spec-start    → implement one spec (TDD)
 /spec-review   → verify one implementation
 /spec-close    → merge/close one spec, or close a completed epic
+/spec-release  → merge development → production and cut a tagged release
+/spec-status   → read-only dashboard (branches, states, releasable)
 /spec-cost     → report per-skill cost (main agent + sub-agents)
 ```
 
@@ -70,7 +73,20 @@ Parent/child structure and dependency/blocker structure are separate concepts.
 
 ## Branching and resume
 
-Implementation branch: `spec/<issue-number>-<slug>`, based on `spec.baseBranch` in `.pi/settings.json` or the repository default branch.
+Two branches drive the workflow:
+
+- **Development branch** — `spec.baseBranch` in `.pi/settings.json`, defaulting to `development` (then the repository default). Spec branches are created from it and merged back into it by `/spec-close`.
+- **Production branch** — `spec.releaseBranch` in `.pi/settings.json`, defaulting to `main` (then the repository default). Only `/spec-release` moves code here.
+
+```text
+development  ← spec/<issue-number>-<slug> branches (created by /spec-start,
+               merged back by /spec-close)
+      │
+      ▼
+main         ← /spec-release merges development → main, tags, releases
+```
+
+Implementation branch: `spec/<issue-number>-<slug>`, based on the development branch.
 
 `/spec-start` is resumable:
 
@@ -79,6 +95,57 @@ Implementation branch: `spec/<issue-number>-<slug>`, based on `spec.baseBranch` 
 - ambiguous same-named branch → refuse rather than overwrite/reset.
 
 A missing configured base branch is an error; lifecycle commands never silently create it.
+
+## Configuration
+
+The lifecycle reads optional settings from `.pi/settings.json` in the target repository. Every key has a documented default, so a repository without the file still works. `/spec-init` generates and commits it; `scripts/spec/validate-settings.sh` validates it.
+
+```json
+{
+  "spec": {
+    "baseBranch": "development",
+    "releaseBranch": "main",
+    "tagPrefix": "v",
+    "versionFile": "package.json",
+    "changelogFile": "CHANGELOG.md",
+    "checks": {
+      "test": "npm test",
+      "typecheck": "tsc --noEmit",
+      "lint": "eslint .",
+      "build": "npm run build"
+    },
+    "release": {
+      "viaPullRequest": false,
+      "draft": false,
+      "bumpDevAfterRelease": true
+    }
+  }
+}
+```
+
+| Key | Default | Used by |
+|---|---|---|
+| `baseBranch` | `development` (else repo default) | `/spec-start`, `/spec-close`, `/spec-review`, `/spec-release`, `/spec-status` |
+| `releaseBranch` | `main` (else repo default) | `/spec-release`, `/spec-status` |
+| `tagPrefix` | `v` | `/spec-release` |
+| `versionFile` | none (auto-detect) | `/spec-release` |
+| `changelogFile` | none (GitHub notes only) | `/spec-release` |
+| `checks` | none (discover per run) | `/spec-review` |
+| `release.viaPullRequest` | `false` | `/spec-release` (protected production branch) |
+| `release.draft` | `false` | `/spec-release` |
+| `release.bumpDevAfterRelease` | `true` | `/spec-release` |
+
+## Releasing
+
+`/spec-release` merges the development branch into the production branch and cuts a product release:
+
+1. Resolves `spec.baseBranch` and `spec.releaseBranch`, syncing both.
+2. Refuses when there is nothing to ship.
+3. Proposes a semver bump (major/minor/patch) from the pending spec work and confirms it with the user.
+4. Drafts release notes from the shipped `spec:done` issues since the last tag.
+5. Merges development → production — directly, or via a pull request when `release.viaPullRequest` — tags `<tagPrefix><version>`, and creates the GitHub Release.
+
+`/spec-release --dry-run` previews the whole plan without mutating anything. `/spec-close` only integrates into development; releasing is a separate, explicit step.
 
 ## Epic completion
 
@@ -100,6 +167,9 @@ Normal spec:
 /spec-start #120
 /spec-review
 /spec-close
+
+# when enough work is on development to ship:
+/spec-release
 ```
 
 Epic:

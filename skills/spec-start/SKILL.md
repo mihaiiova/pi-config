@@ -17,7 +17,7 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 3. **Validate state and blockers.** A fresh spec must carry `spec:ready`. A resumed spec may carry `spec:in-progress`. If `## Blocked by` contains any still-open issue, refuse and report the blockers. If Testing Decisions do not contain a usable public testing seam, stop before touching the worktree and resolve that decision.
 
-4. **Determine and sync the base branch.** Read `spec.baseBranch` from `.pi/settings.json`; otherwise use the repository default. `git fetch origin`, then fast-forward the local base to its remote. Never invent or silently create a missing base branch.
+4. **Determine and sync the base (development) branch.** Read `spec.baseBranch` from `.pi/settings.json`; otherwise use `development` if it exists, else the repository default. `git fetch origin`, then fast-forward the local base to its remote. Never invent or silently create a missing base branch.
 
 5. **Resume or create the feature branch.** The canonical branch is `spec/<issue-number>-<slug>`.
    - If neither local nor remote branch exists, create it from the synced base.

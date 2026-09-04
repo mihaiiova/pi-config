@@ -17,14 +17,17 @@ pi-config/
 
 ## Spec lifecycle
 
-Two discovery commands feed a four-stage lifecycle:
+One-time setup and a live dashboard frame the lifecycle, with spec work landing on a **development** branch and a dedicated release step promoting it to **production**:
 
+- `/spec-init` — generate and commit `.pi/settings.json` (branch model, checks, versioning) for a repository.
 - `/spec-backlog` — review open issues against the code and recommend what product/project work to do next.
 - `/spec-audit` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
 - `/spec-new` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
 - `/spec-start` — implement one spec with TDD (refuses epic containers).
 - `/spec-review` — verify one implementation.
 - `/spec-close` — merge, close, clean up; updates parent-epic progress.
+- `/spec-release` — merge the development branch into production and cut a tagged product release.
+- `/spec-status` — read-only dashboard: branches, lifecycle states, blockers, releasable work.
 - `/spec-cost` — report how much each spec skill cost (main agent + sub-agents).
 
 Example (normal):
@@ -34,6 +37,9 @@ Example (normal):
 /spec-start #120
 /spec-review
 /spec-close
+
+# when enough work is on development to ship:
+/spec-release
 ```
 
 Example (epic):
@@ -49,7 +55,7 @@ Example (epic):
 /spec-start #202   …
 ```
 
-`/spec-start` cannot start an epic directly. See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and base-branch configuration.
+`/spec-start` cannot start an epic directly. Spec branches are based on and merged into the **development** branch (`spec.baseBranch`, default `development`); `/spec-release` merges development into the **production** branch (`spec.releaseBranch`, default `main`) and cuts the release. `/spec-init` generates the `.pi/settings.json` holding these (plus `checks`, versioning, and release preferences). See [docs/spec-lifecycle.md](docs/spec-lifecycle.md) for status labels, parent/child and blocker relationships, branch naming, and the full configuration schema.
 
 ## How packages work
 

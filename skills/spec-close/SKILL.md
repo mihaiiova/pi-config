@@ -23,7 +23,7 @@ Stop after the epic case.
 
 1. **Require a successful review.** The spec must carry `spec:reviewed` (or an unambiguous current review report with no blockers). Refuse otherwise.
 
-2. **Merge into the configured base.** Resolve `spec.baseBranch` from `.pi/settings.json` or the repository default. Check it exists; never create a missing base branch implicitly. Check out and fast-forward it, then merge the canonical `spec/<id>-<slug>` branch with a merge commit and push the base branch.
+2. **Merge into the development branch.** Resolve `spec.baseBranch` from `.pi/settings.json`; otherwise use `development` if it exists, else the repository default. Check it exists; never create a missing base branch implicitly. Check out and fast-forward it, then merge the canonical `spec/<id>-<slug>` branch with a merge commit and push the base branch. Do not merge development into production here — that is a release action for `/spec-release`.
 
 3. **Close the issue.** Close the spec issue with a comment referencing the merge commit.
 

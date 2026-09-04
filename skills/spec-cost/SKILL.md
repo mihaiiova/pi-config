@@ -1,6 +1,6 @@
 ---
 name: spec-cost
-description: Report how much each spec workflow skill cost (spec-new, spec-start, spec-review, spec-close, and their sub-agents) by parsing pi session files and sub-agent artifacts. Use when the user wants to see the LLM cost of a skill, compare skill costs, or audit what the spec lifecycle is spending.
+description: Report how much each spec workflow skill cost (spec-init, spec-new, spec-start, spec-review, spec-close, spec-release, spec-status, and their sub-agents) by parsing pi session files and sub-agent artifacts. Use when the user wants to see the LLM cost of a skill, compare skill costs, or audit what the spec lifecycle is spending.
 ---
 
 # Spec cost
