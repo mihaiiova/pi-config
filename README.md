@@ -19,7 +19,7 @@ pi-config/
 
 One-time setup and a live dashboard frame the lifecycle, with spec work landing on a **development** branch and a dedicated release step promoting it to **production**:
 
-- `/spec-init` — generate and commit `.pi/settings.json` (branch model, checks, versioning) for a repository.
+- `/spec-init` — generate or reconcile and commit `.pi/settings.json` (branch model, checks, versioning) for a repository.
 - `/spec-backlog` — review open issues against the code and recommend what product/project work to do next.
 - `/spec-audit` — read-only technical-health audit that consolidates findings into prioritized technical initiatives.
 - `/spec-new` — define a **normal spec** or an **epic** of child specs; publishes via the trusted plan applier.
