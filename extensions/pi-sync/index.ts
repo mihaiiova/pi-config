@@ -5,7 +5,7 @@
  * Tool:    pi_sync (callable by LLM)
  *
  * Flow:
- *   1. Git: fetch → auto-commit if dirty → pull --rebase → push
+ *   1. Git: refuse dirty tool calls, or ask before committing in TUI; then sync
  *   2. Packages: read pi.packages from package.json, compare with settings.json
  *      - Missing → pi install
  *      - Extras → ask user which to keep (all pre-selected, Space to deselect)
@@ -24,6 +24,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createGitClient } from "./git-sync.mjs";
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -31,65 +32,7 @@ import { fileURLToPath } from "node:url";
 // hardcoded path — pi-config is cloned to different locations per machine.
 const REPO_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SETTINGS_PATH = resolve(process.env.HOME!, ".pi/agent/settings.json");
-
-// ── Git helpers ────────────────────────────────────────────────
-
-function git(args: string): string {
-  return execSync(`git -C "${REPO_PATH}" ${args}`, {
-    encoding: "utf-8",
-    stdio: ["pipe", "pipe", "pipe"],
-  }).trim();
-}
-
-function gitSafe(args: string): { stdout: string; stderr: string; ok: boolean } {
-  try {
-    const out = execSync(`git -C "${REPO_PATH}" ${args}`, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    return { stdout: out.trim(), stderr: "", ok: true };
-  } catch (err: any) {
-    return {
-      stdout: err.stdout?.trim() ?? "",
-      stderr: err.stderr?.trim() ?? err.message,
-      ok: false,
-    };
-  }
-}
-
-function isDirty(): boolean {
-  return git("status --porcelain").length > 0;
-}
-
-function hasConflicts(): boolean {
-  return git("diff --name-only --diff-filter=U").length > 0;
-}
-
-function isRebasing(): boolean {
-  try {
-    execSync(
-      `test -d "$(git -C "${REPO_PATH}" rev-parse --git-dir)/rebase-merge"`,
-      { stdio: "ignore" },
-    );
-    return true;
-  } catch {
-    try {
-      execSync(
-        `test -d "$(git -C "${REPO_PATH}" rev-parse --git-dir)/rebase-apply"`,
-        { stdio: "ignore" },
-      );
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
-
-function stageAndCommit(): string {
-  git("add -A");
-  git('commit -m "sync: auto-commit before pull"');
-  return git("log -1 --format=%s");
-}
+const gitClient = createGitClient(REPO_PATH);
 
 // ── Package helpers ───────────────────────────────────────────
 
@@ -240,53 +183,6 @@ class ExtraPackagesComponent {
   }
 }
 
-// ── Sync ──────────────────────────────────────────────────────
-
-interface SyncResult {
-  steps: string[];
-  error?: string;
-  needsHelp?: boolean;
-  conflictFiles?: string[];
-}
-
-function gitSync(): SyncResult {
-  const steps: string[] = [];
-
-  const fetch = gitSafe("fetch --quiet");
-  if (!fetch.ok) {
-    return { steps, error: `fetch failed: ${fetch.stderr}` };
-  }
-
-  if (isDirty()) {
-    const msg = stageAndCommit();
-    steps.push(`auto-committed: ${msg}`);
-  }
-
-  const pull = gitSafe("pull --rebase --quiet");
-  if (!pull.ok) {
-    if (isRebasing() && hasConflicts()) {
-      const files = git("diff --name-only --diff-filter=U").split("\n");
-      return { steps, needsHelp: true, conflictFiles: files };
-    }
-    return { steps, error: `pull failed: ${pull.stderr}` };
-  }
-
-  if (pull.stdout && !pull.stdout.includes("Already up to date")) {
-    steps.push("pulled remote changes");
-  }
-
-  const push = gitSafe("push --quiet");
-  if (!push.ok) {
-    return { steps, error: `push failed: ${push.stderr}` };
-  }
-
-  if (steps.length === 0) {
-    steps.push("already up to date");
-  }
-
-  return { steps };
-}
-
 // ── Extension ─────────────────────────────────────────────────
 
 export default function piSync(pi: ExtensionAPI) {
@@ -299,7 +195,19 @@ export default function piSync(pi: ExtensionAPI) {
       "Sync the pi-config repo with GitHub and reconcile installed pi packages. Call when the user asks to sync their pi config across machines.",
     parameters: Type.Object({}),
     async execute() {
-      const gs = gitSync();
+      const gs = gitClient.syncClean();
+      if (gs.dirtyFiles) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Git: sync refused because pi-config has local changes:\n${gs.dirtyFiles.map((f) => `  - ${f}`).join("\n")}\n\nReview and commit them explicitly, or run /pi-sync in TUI to choose whether to commit and sync.`,
+            },
+          ],
+          details: {},
+          isError: true,
+        };
+      }
       if (gs.error) {
         return {
           content: [{ type: "text", text: `Git: ${gs.error}` }],
@@ -364,8 +272,42 @@ export default function piSync(pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       // ── Git ────────────────────────────────────────────
 
+      const dirtyFiles = gitClient.getDirtyFiles();
+      if (dirtyFiles.length > 0) {
+        const confirmed = await ctx.ui.confirm(
+          "Local changes detected",
+          `${dirtyFiles.map((f) => `  ${f}`).join("\n")}\n\nCommit all listed changes and sync?`,
+        );
+        if (!confirmed) {
+          ctx.ui.notify(
+            "Sync cancelled; local changes were not committed",
+            "warning",
+          );
+          return;
+        }
+
+        try {
+          const message = gitClient.commitAllChanges();
+          ctx.ui.notify(`Committed: ${message}`, "success");
+        } catch (err: any) {
+          ctx.ui.notify(
+            `Commit failed: ${err.stderr?.trim() ?? err.message}`,
+            "error",
+          );
+          return;
+        }
+      }
+
       ctx.ui.notify("Syncing pi-config…", "info");
-      const gs = gitSync();
+      const gs = gitClient.syncClean();
+
+      if (gs.dirtyFiles) {
+        ctx.ui.notify(
+          `Sync refused because new local changes appeared: ${gs.dirtyFiles.join(", ")}`,
+          "error",
+        );
+        return;
+      }
 
       if (gs.needsHelp) {
         ctx.ui.notify(

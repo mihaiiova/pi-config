@@ -60,7 +60,7 @@ Example (epic):
 
 ## How packages work
 
-Packages are tracked in `package.json` under `pi.packages` and installed globally on each machine via `pi install`. They live in `~/.pi/agent/npm/`, **not** in pi-config's `node_modules/`. This avoids duplicate-loading conflicts.
+Packages are tracked as exact `npm:<name>@<version>` specs in `package.json` under `pi.packages` and installed globally on each machine via `pi install`. They live in `~/.pi/agent/npm/`, **not** in pi-config's `node_modules/`. This avoids duplicate-loading conflicts and makes a pi-config commit reproduce the same package versions on every machine. Package upgrades are deliberate edits to the pinned versions.
 
 `/pi-sync` reconciles the list against what's installed:
 - Packages in `pi.packages` but not installed → auto-installs
@@ -80,10 +80,12 @@ Then run `/pi-sync` to install all listed packages. Then `/reload`.
 
 Run **`/pi-sync`** from any pi session. It handles:
 
-1. `git fetch` + auto-commit local changes + `git pull --rebase` + `git push`
+1. Syncs a clean repository with `git fetch` + `git pull --rebase` + `git push`
 2. Installs any new packages added to `pi.packages`
 3. Asks about packages installed locally but not in the list
 4. `pi update --extensions`
+
+When local changes exist, the TUI lists every dirty entry and asks whether to **commit all listed changes and sync**. Cancelling leaves the working tree untouched. The non-interactive `pi_sync` tool never commits local changes: it refuses to sync and reports the dirty entries so they can be reviewed first.
 
 If merge conflicts: resolve manually in your pi-config repo, then re-run `/pi-sync`.
 
@@ -92,16 +94,16 @@ After syncing, `/reload` to pick up new or changed extensions.
 ## Adding a new npm package
 
 ```bash
-pi install npm:<package-name>
+pi install npm:<package-name>@<version>
 ```
 
-Then add it to `pi.packages` in `package.json`:
+Then add that exact version to `pi.packages` in `package.json`:
 
 ```json
 "pi": {
   "packages": [
-    "npm:pi-mcp-adapter",
-    "npm:<new-package>"
+    "npm:pi-mcp-adapter@2.32.1",
+    "npm:<new-package>@<version>"
   ]
 }
 ```

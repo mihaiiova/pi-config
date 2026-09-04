@@ -14,11 +14,14 @@ Place new extensions in `<pi-config>/extensions/<name>/` and new skills in `<pi-
 
 ## Keeping in sync
 
-Run `/pi-sync` from any pi session. It handles git push/pull, installs new packages from `pi.packages`, and asks about extras. Then `/reload`.
+Run `/pi-sync` from any pi session. On a clean repository it handles git push/pull, installs pinned packages from `pi.packages`, and asks about extras. If the repository is dirty, the TUI lists the changes and requires confirmation before committing and syncing. The non-interactive `pi_sync` tool refuses dirty repositories and reports the files; it never commits them. Then `/reload`.
 
 Or manually:
 
 ```bash
-cd <pi-config> && git add -A && git commit -m "..." && git push
+cd <pi-config> && git status --short
+git add <reviewed-files> && git commit -m "..." && git push
 # On the other machine: /pi-sync
 ```
+
+Keep every npm entry in `package.json` under `pi.packages` pinned as `npm:<name>@<version>`; do not add floating package specs.
