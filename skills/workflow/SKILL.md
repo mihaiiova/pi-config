@@ -1,12 +1,13 @@
 ---
 name: workflow
-description: Quick recap of the main pi-config skills — the spec lifecycle (/spec-new, /spec-start, /spec-review, /spec-close, /spec-release), the setup/dashboard skills (/spec-init, /spec-status), and the discovery skills (/spec-backlog, /spec-audit).
+description: Quick recap of the main pi-config skills — the spec lifecycle (/spec-new, /spec-start, /spec-review, /spec-close, /spec-release), the setup/dashboard skills (/spec-init, /spec-status), and the capture/discovery skills (/spec-draft, /spec-backlog, /spec-audit).
 ---
 
 # Workflow
 
-## Discovery
+## Capture & discovery
 
+- `/spec-draft` — capture a shallow idea as one lightweight `idea` issue (no definition).
 - `/spec-backlog` — review open issues against the code; recommend what product/project work to do next.
 - `/spec-audit` — read-only technical-health audit; consolidates findings into prioritized technical initiatives.
 
