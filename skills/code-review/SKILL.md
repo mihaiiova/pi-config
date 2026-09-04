@@ -95,6 +95,8 @@ For a large diff, split the patch by subsystem and give each reviewer only the s
 
 Choose one or two `reviewer` sub-agents by diff size. Get the size with `git diff --shortstat <ref>...HEAD` (working-tree equivalent: `git diff --shortstat HEAD` plus `git diff --cached --shortstat HEAD`). If total insertions+deletions is under ~200, send **one** `reviewer` covering both axes; otherwise send **two** `reviewer` sub-agents in parallel.
 
+> **Reviewer prompt phrasing.** The pi-subagents task-intent classifier treats a read-only `reviewer` as an implementation task and rejects the run when the task text contains a bare edit-imperative phrase such as `always apply`, `must fix`, `must edit`, or `make the changes`. Avoid those phrasings; where a constraint is needed, write it as a noun ("this standard applies to every review") and add an explicit `Do not modify any files.` blanket prohibition, which forces read-only classification.
+
 **Standards sub-agent prompt** — include:
 
 - The self-contained review packet: selected mode, resolved refs, exact diff command(s), changed-file list/stat, commit list when applicable, and relevant patch hunks or an accessible patch artifact. For `--codebase`, provide the checked-out commit and requested audit scope.
