@@ -215,5 +215,7 @@ assert_contains "$backlog" "Do not mutate"
 assert_contains "$backlog" "approval"
 pass "spec-backlog does not mutate without approval"
 
+"$root/tests/spec/run-checks-test.sh"
+
 echo
 echo "All spec-orchestration tests passed."

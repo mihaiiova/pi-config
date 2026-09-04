@@ -9,7 +9,7 @@ Set up a repository for the spec lifecycle by generating or reconciling a commit
 
 ## Boundaries
 
-- Write only `.pi/settings.json` (and, if offered and accepted, a `CONTEXT.md` seed). Never edit product code, tests, or dependencies.
+- Write only `.pi/settings.json` (and, if offered and accepted, a `CONTEXT.md` seed). Never edit product code, tests, dependencies, or verification scripts. The shared pi-config `scripts/spec/run-checks.sh` executes configured checks; it is not copied into product repositories.
 - Never blindly overwrite `.pi/settings.json` or `CONTEXT.md`. When `.pi/settings.json` already exists, reconcile it (see step 3): validate, diff against inferred facts, and apply only the changes the user confirms. Leave an existing `CONTEXT.md` untouched.
 - Do not create the development or production branches here — `/spec-start` and `/spec-release` still refuse to create missing branches. If a branch is missing, tell the user to create it.
 - Commit the generated files so the configuration is portable across machines and agents.
@@ -22,7 +22,7 @@ Set up a repository for the spec lifecycle by generating or reconciling a commit
    - `spec.baseBranch` — `development` if it exists, else the repository default.
    - `spec.releaseBranch` — `main` if it exists, else the repository default.
    - `spec.versionFile` — the detected version manifest.
-   - `spec.checks` — map each detected script/tool to `test`, `typecheck`, `lint`, `build`.
+   - `spec.checks` — map each detected durable project command to a descriptive name such as `test`, `typecheck`, `lint`, `build`. These commands are later executed from the product root by pi-config's `scripts/spec/run-checks.sh`, which captures verbose logs while preserving failures. Do not invent product checks; if no meaningful command exists, record that as a follow-up rather than creating one.
    - `spec.tagPrefix` — `v`.
 
 3. **Reconcile with existing settings.** If `.pi/settings.json` already exists, do not skip or refuse — treat it as the starting point:
