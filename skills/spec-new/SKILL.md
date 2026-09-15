@@ -31,6 +31,8 @@ It may inspect the codebase as deeply as needed to resolve design facts.
 
 4. **Capture decisions as they settle.** They become Implementation Decisions and Testing Decisions.
 
+   When a spec replaces an existing transport, flow, or surface, enumerate the user-visible affordances that path carries today — composer controls, pickers, links, side effects — and state each one's fate: preserved, replaced, or dropped. A dropped affordance the UI still renders is a decision to record in the spec, not an implementation detail to discover during review.
+
 5. **Synthesize specs.** Use `/to-spec`'s structure (Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope, Further Notes), skipping its publishing step. Testing Decisions must name the public seams `/tdd` will exercise. For an epic, every child is a complete spec suitable for `/spec-start` without another broad requirements interview.
 
 6. **Generate a plan identity.** Every plan has an opaque `plan_id` generated once (UUID or similarly collision-resistant identifier). Reuse the same `plan_id` when resuming/re-running the same definition. Do not derive identity from a title or slug. Artifact `id` fields remain readable stable kebab-case identifiers within that plan.
