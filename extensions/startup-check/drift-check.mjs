@@ -29,3 +29,25 @@ export function computeReloadSignal(currentFiles, loadedFingerprint) {
   if (loadedFingerprint == null) return false;
   return fingerprintFiles(currentFiles) !== loadedFingerprint;
 }
+
+export function computeVerdict({
+  localHead,
+  remoteHead,
+  installedPackages,
+  desiredPackages,
+  changedFileMarker,
+}) {
+  const gitDrift = remoteHead != null && localHead !== remoteHead;
+  const { missing, extras } = diffPackages(desiredPackages, installedPackages);
+  const pkgDrift = missing.length > 0 || extras.length > 0;
+  const sync = gitDrift || pkgDrift;
+  const reload = changedFileMarker === true;
+
+  let verdict;
+  if (sync && reload) verdict = "both";
+  else if (sync) verdict = "sync";
+  else if (reload) verdict = "reload";
+  else verdict = "none";
+
+  return { verdict };
+}

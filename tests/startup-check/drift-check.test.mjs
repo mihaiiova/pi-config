@@ -4,6 +4,7 @@ import {
   diffPackages,
   fingerprintFiles,
   computeReloadSignal,
+  computeVerdict,
 } from "../../extensions/startup-check/drift-check.mjs";
 
 // ── 1. Package diff: missing/extras, source objects, filtering, order ──
@@ -70,3 +71,44 @@ assert.equal(
   true,
 );
 console.log("ok - computeReloadSignal flags changed/added/removed, ignores null baseline");
+
+// ── 4. Verdict: exact mapping of sync/reload/both/none ──────────
+const base = {
+  localHead: "abc",
+  remoteHead: "abc",
+  installedPackages: ["npm:a@1.0.0"],
+  desiredPackages: ["npm:a@1.0.0"],
+  changedFileMarker: false,
+};
+
+assert.equal(computeVerdict(base).verdict, "none");
+assert.equal(computeVerdict({ ...base, localHead: "def" }).verdict, "sync");
+assert.equal(computeVerdict({ ...base, installedPackages: [] }).verdict, "sync");
+assert.equal(
+  computeVerdict({ ...base, installedPackages: ["npm:a@1.0.0", "npm:b@2.0.0"] }).verdict,
+  "sync",
+);
+assert.equal(computeVerdict({ ...base, changedFileMarker: true }).verdict, "reload");
+assert.equal(
+  computeVerdict({ ...base, localHead: "def", changedFileMarker: true }).verdict,
+  "both",
+);
+assert.equal(
+  computeVerdict({
+    ...base,
+    localHead: "def",
+    installedPackages: [],
+    changedFileMarker: true,
+  }).verdict,
+  "both",
+);
+assert.equal(computeVerdict({ ...base, remoteHead: null }).verdict, "none");
+assert.equal(
+  computeVerdict({ ...base, remoteHead: null, installedPackages: [] }).verdict,
+  "sync",
+);
+assert.equal(
+  computeVerdict({ ...base, localHead: null, remoteHead: "def" }).verdict,
+  "sync",
+);
+console.log("ok - computeVerdict maps sync/reload/both/none exactly");
