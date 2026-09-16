@@ -215,7 +215,26 @@ assert_contains "$backlog" "Do not mutate"
 assert_contains "$backlog" "approval"
 pass "spec-backlog does not mutate without approval"
 
+# ── 13. Subagent delegation: scout (inspection) and worker (TDD) ─
+new="$root/skills/spec-new/SKILL.md"
+assert_contains "$new" "scout"
+assert_contains "$new" "handoff"
+assert_contains "$new" "read-only"
+assert_contains "$new" ".pi/artifacts/spec-new"
+assert_not_contains "$new" "agentOverrides"
+pass "spec-new delegates inspection to a read-only scout with a handoff file"
+
+assert_contains "$start" "worker"
+assert_contains "$start" "tdd"
+assert_contains "$start" "trivial"
+assert_contains "$start" "turn budget"
+assert_contains "$start" "single writer"
+assert_contains "$start" "checkpoint"
+assert_not_contains "$start" "agentOverrides"
+pass "spec-start delegates the TDD loop to a worker via a trivial-spec heuristic"
+
 "$root/tests/spec/run-checks-test.sh"
+"$root/tests/spec/trivial-spec-test.sh"
 
 echo
 echo "All spec-orchestration tests passed."

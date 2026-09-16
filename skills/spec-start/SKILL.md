@@ -27,6 +27,17 @@ Load one implementation spec, prepare or resume its worktree, and implement it t
 
 6. **Transition to in progress.** Treat lifecycle labels as a state machine: a non-epic spec carries exactly one of `spec:ready`, `spec:in-progress`, `spec:reviewed`, `spec:done`. When starting fresh, remove other lifecycle-state labels and apply `spec:in-progress`. When resuming an already `spec:in-progress` spec, leave the state unchanged.
 
-7. **Implement with `/tdd`.** Work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Add or update product tests needed for the spec's acceptance criteria. When the project needs a durable new verification command, add it to the product tooling and register it in `spec.checks`; otherwise run the narrowest test command per cycle and paste only failures (tail-limited). Record passing runs as `passed` without pasting output. Don't rewrite code that already passes. Create coherent checkpoint commits referencing the spec issue.
+7. **Implement with `/tdd`.** Route through the trivial-spec heuristic: classify the spec body with `scripts/spec/trivial-spec.sh`. If it prints `trivial` (a single slice), implement inline; if it prints `worker`, delegate the TDD loop to the `worker` subagent (see *Worker delegation* below). Either way, work only the agreed scope in vertical slices at the pre-agreed seams: one failing behavioral test, minimum implementation, then the next slice. Confirm each red failure is caused by missing behavior before production changes. Add or update product tests needed for the spec's acceptance criteria. When the project needs a durable new verification command, add it to the product tooling and register it in `spec.checks`; otherwise run the narrowest test command per cycle and paste only failures (tail-limited). Record passing runs as `passed` without pasting output. Don't rewrite code that already passes. Create coherent checkpoint commits referencing the spec issue.
 
 8. **Leave the branch unmerged.** Do not merge or push the base branch. `/spec-review` verifies the implementation and `/spec-close` integrates it.
+
+## Worker delegation
+
+Implementation is delegated to the `worker` subagent by default; inline is the exception for a trivial spec.
+
+- **Route by heuristic.** `scripts/spec/trivial-spec.sh <spec-body>` prints `trivial` (single slice — implement inline, skipping subagent cold-start) or `worker` (delegate). Inline work still follows `/tdd`.
+- **Single writer.** The `worker` is the **single writer** in its context. It owns the whole red-green-refactor loop — one failing test, minimum implementation, next slice — so tests and implementation stay in one context; do not fan out a separate test subagent.
+- **Launch.** Pass the `tdd` skill, the agreed scope and seams, the acceptance criteria, a `turn budget` sized to the spec, and a checkpoint contract (commits reference the issue). The parent remains the single writer authority: it keeps branch and label bookkeeping, supervises, and creates coherent checkpoint commits referencing the issue.
+- **Checkpoint.** Never leave a green slice uncommitted; each checkpoint commit references the spec issue.
+
+`spec-start` names the `worker` agent only; it never names model ids or tiers — the concrete model comes from the project's agent configuration.

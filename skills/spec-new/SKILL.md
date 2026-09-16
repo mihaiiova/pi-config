@@ -19,7 +19,7 @@ It may inspect the codebase as deeply as needed to resolve design facts.
 
 ## Process
 
-1. **Inspect the repository.** Read every applicable `AGENTS.md`, `CONTEXT.md` (if present), ADRs, the domain glossary, and the area the change touches. Resolve facts by exploring the codebase; never ask the user for a discoverable fact.
+1. **Delegate repository inspection to the `scout` subagent.** Launch one read-only `scout` subagent to explore the repository and write a context handoff file at `.pi/artifacts/spec-new/scout-handoff.md`. The parent consumes that handoff for the interview and synthesis instead of re-reading the repository itself. The scout resolves facts by exploring the codebase; never ask the user for a discoverable fact.
 
 2. **Decide: spec or epic.** Recommend the structure as part of the interview; do not ask "should this be an epic?" merely because the request is large.
 
@@ -90,5 +90,33 @@ It may inspect the codebase as deeply as needed to resolve design facts.
 8. **Apply the plan.** Run `scripts/spec/apply-plan.sh <plan.json>`. The trusted applier validates the plan, creates artifacts in dependency-safe order, links parent/child and blockers, manages lifecycle labels, and is **idempotent and convergent**: a rerun with the same `plan_id` and artifact id reuses the same GitHub issue and updates it to the latest title/body rather than leaving stale content. Do not create issues by hand.
 
 9. **Report.** Summarize the created spec or epic, dependency graph, agreed testing seams, and readiness. A normal spec becomes `spec:ready`. An epic is a `spec:epic` container; unblocked children become `spec:ready` and blocked children become ready when their blockers close.
+
+## Scout inspection and handoff
+
+`scout` is a **read-only** subagent: it inspects and reports, never edits. Launch it with a compact brief:
+
+- **Objective.** Produce the repository-context handoff the parent consumes mechanically.
+- **Scope.** Read every applicable `AGENTS.md`, `CONTEXT.md` (if present), ADRs, the domain glossary, and the area the change touches; resolve design facts by exploring the codebase.
+- **Authority.** Read-only — do not modify files, create branches, or edit issues.
+- **Output.** Write `.pi/artifacts/spec-new/scout-handoff.md` in the stable format below.
+- **Done when.** The handoff answers the design facts the interview and synthesis need, so the parent never re-reads the repository.
+
+Stable handoff format (the parent parses it):
+
+```markdown
+## Repository
+<repo name, root, base/release branch facts if discoverable>
+
+## Context
+<applicable AGENTS.md, CONTEXT.md, ADRs, domain glossary — paths and gist>
+
+## Area touched
+<modules/files the change touches, and each design fact resolved>
+
+## Open questions
+<facts the scout could not resolve — the only things the parent may ask the user>
+```
+
+`spec-new` names the `scout` agent only; it never names model ids or tiers — the concrete model comes from the project's agent configuration.
 
 See `docs/spec-lifecycle.md` for lifecycle states, branch rules, epic completion, and resume semantics.
