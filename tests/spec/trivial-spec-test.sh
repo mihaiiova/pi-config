@@ -73,5 +73,14 @@ out="$(printf '## User Stories\n1. As a user, I want Z.\n' | "$script")"
 [[ "$out" == "trivial" ]] || fail "stdin classification failed: got '$out'"
 pass "reads a spec body from stdin"
 
+# ── 6. Bulleted (not numbered) multiple stories → worker ──────
+cat > "$work/bulleted-stories.md" <<'MD'
+## User Stories
+- As a developer, I want X.
+- As a developer, I want Y.
+MD
+expect "$work/bulleted-stories.md" worker
+pass "bulleted multiple user stories classify as worker"
+
 echo
 echo "All trivial-spec tests passed."

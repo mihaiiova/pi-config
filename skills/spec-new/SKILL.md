@@ -15,7 +15,7 @@ Turn a feature request or idea into published, decision-complete implementation 
 - run `/tdd`, merge anything, or close implementation specs
 - create implementation tickets beneath a spec
 
-It may inspect the codebase as deeply as needed to resolve design facts.
+It may inspect the codebase as deeply as needed to resolve design facts — via the read-only `scout` subagent, whose handoff the parent consumes (see *Scout inspection and handoff*).
 
 ## Process
 

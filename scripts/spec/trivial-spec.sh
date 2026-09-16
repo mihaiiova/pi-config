@@ -45,11 +45,12 @@ if ! grep -qE '^##[[:space:]]+User Stories([[:space:]]|$)' <<<"$body"; then
   exit 1
 fi
 
-# Count numbered story items inside the User Stories section only.
+# Count story items inside the User Stories section only. Numbered (`1.`) and
+# bulleted (`-`/`*`) items are both accepted; /to-spec normally numbers them.
 count="$(awk '
   /^##[[:space:]]+User Stories([[:space:]]|$)/ { insec = 1; next }
   /^##[[:space:]]/ { insec = 0 }
-  insec && /^[[:space:]]*[0-9]+[.)][[:space:]]/ { n++ }
+  insec && (/^[[:space:]]*[0-9]+[.)][[:space:]]/ || /^[[:space:]]*[-*][[:space:]]/) { n++ }
   END { print n + 0 }
 ' <<<"$body")"
 

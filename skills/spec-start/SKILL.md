@@ -37,7 +37,7 @@ Implementation is delegated to the `worker` subagent by default; inline is the e
 
 - **Route by heuristic.** `scripts/spec/trivial-spec.sh <spec-body>` prints `trivial` (single slice — implement inline, skipping subagent cold-start) or `worker` (delegate). Inline work still follows `/tdd`.
 - **Single writer.** The `worker` is the **single writer** in its context. It owns the whole red-green-refactor loop — one failing test, minimum implementation, next slice — so tests and implementation stay in one context; do not fan out a separate test subagent.
-- **Launch.** Pass the `tdd` skill, the agreed scope and seams, the acceptance criteria, a `turn budget` sized to the spec, and a checkpoint contract (commits reference the issue). The parent remains the single writer authority: it keeps branch and label bookkeeping, supervises, and creates coherent checkpoint commits referencing the issue.
+- **Launch.** Pass the `tdd` skill, the agreed scope and seams, the acceptance criteria, a `turn budget` sized to the spec, and a checkpoint contract (commits reference the issue). The parent is the single authority on the spec branch: it keeps branch and label bookkeeping, supervises, and records coherent checkpoint commits referencing the issue.
 - **Checkpoint.** Never leave a green slice uncommitted; each checkpoint commit references the spec issue.
 
 `spec-start` names the `worker` agent only; it never names model ids or tiers — the concrete model comes from the project's agent configuration.
