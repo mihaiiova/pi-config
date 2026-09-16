@@ -1,8 +1,9 @@
 /**
  * startup-check — detect pi-config drift on session start
  *
- * Compares the local repo against origin/HEAD, reconciles installed pi
- * packages against pi.packages, and detects changed extension/skill files
+ * Compares the local repo against its remote tracking branch, reconciles
+ * installed pi packages against pi.packages, and detects changed
+ * extension/skill files
  * since the last startup/reload. Emits a single non-blocking warning telling
  * the user which command (/pi-sync, /reload, or both) is needed.
  */
@@ -23,7 +24,6 @@ import { fileURLToPath } from "node:url";
 import {
   computeReloadSignal,
   computeVerdict,
-  diffPackages,
   fingerprintFiles,
 } from "./drift-check.mjs";
 
@@ -40,11 +40,12 @@ const MARKER_PATH = resolve(
 
 // ── Git helpers ───────────────────────────────────────────────
 
-function gitSafe(args: string[]): string | null {
+function gitSafe(args: string[], timeoutMs?: number): string | null {
   try {
     return execFileSync("git", ["-C", REPO_PATH, ...args], {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
+      timeout: timeoutMs,
     }).trim();
   } catch {
     return null;
@@ -60,11 +61,17 @@ function getGitHeads(): { localHead: string | null; remoteHead: string | null } 
   if (isOffline()) {
     return { localHead: gitSafe(["rev-parse", "HEAD"]), remoteHead: null };
   }
-  gitSafe(["fetch", "--quiet"]);
-  return {
-    localHead: gitSafe(["rev-parse", "HEAD"]),
-    remoteHead: gitSafe(["rev-parse", "origin/HEAD"]),
-  };
+  gitSafe(["fetch", "--quiet"], 15000);
+  const localHead = gitSafe(["rev-parse", "HEAD"]);
+  // Compare against the current branch's remote counterpart, not origin/HEAD.
+  // origin/HEAD points at the default branch, so pi-config work on
+  // `development`/`spec/*` would always read as drift even when fully synced.
+  const branch = gitSafe(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const remoteHead =
+    branch && branch !== "HEAD"
+      ? gitSafe(["rev-parse", `origin/${branch}`])
+      : gitSafe(["rev-parse", "origin/HEAD"]);
+  return { localHead, remoteHead };
 }
 
 // ── Package helpers ───────────────────────────────────────────

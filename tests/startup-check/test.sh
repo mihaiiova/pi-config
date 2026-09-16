@@ -21,6 +21,10 @@ grep -Fq 'ctx.ui.notify(' "$source_file"
 grep -Fq 'PI_OFFLINE' "$source_file"
 grep -Fq 'PI_SKIP_VERSION_CHECK' "$source_file"
 
+# Remote drift must compare against the current branch's remote counterpart
+# (origin/<branch>), never the default branch via origin/HEAD.
+grep -Fq -- '--abbrev-ref' "$source_file"
+
 # Non-blocking: never prompt or select.
 if grep -Fq 'ctx.ui.confirm' "$source_file"; then
   fail "startup-check must not call ctx.ui.confirm"
@@ -38,7 +42,7 @@ import { readFileSync } from "node:fs";
 const manifest = JSON.parse(readFileSync(process.argv[2], "utf-8"));
 assert.match(
   manifest.version,
-  /^[0-9]+\.[0-9]+\.[0-9]+$/,
+  /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/,
   "package.json is missing a top-level semver version",
 );
 console.log("ok - package.json has a top-level semver version");
