@@ -8,6 +8,7 @@ Shared pi configuration — extensions, skills, prompts, and themes synced acros
 pi-config/
 ├── extensions/       # Custom TypeScript extensions
 │   ├── pi-sync/      #   /pi-sync — git push/pull + reconcile packages
+│   ├── pi-config/    #   /pi-config — model tiers, subagent routing, spec setup
 │   └── skills-select/ #  /skills-select — per-project skill allowlist
 ├── skills/           # Agent skills (SKILL.md directories)
 ├── prompts/          # Prompt templates (.md)
