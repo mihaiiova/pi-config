@@ -256,7 +256,15 @@ export default function piConfig(pi: ExtensionAPI) {
       if (parentTier === undefined) return;
 
       const subagentTiers: Record<string, string> = {};
-      for (const agent of Object.keys(DEFAULT_SUBAGENT_TIERS)) {
+      // Iterate the union of built-in defaults and any agents already persisted,
+      // so re-running preserves agents added by hand instead of dropping them.
+      const agentNames = [
+        ...new Set([
+          ...Object.keys(DEFAULT_SUBAGENT_TIERS),
+          ...Object.keys(current.subagentTiers ?? {}),
+        ]),
+      ];
+      for (const agent of agentNames) {
         const prefill = current.subagentTiers?.[agent] ?? DEFAULT_SUBAGENT_TIERS[agent];
         const tier = await ctx.ui.select(
           `Subagent "${agent}" — tier:`,
@@ -307,7 +315,7 @@ export default function piConfig(pi: ExtensionAPI) {
       if (validation.ok) {
         ctx.ui.notify(
           `Saved .pi/pi-config.json and .pi/settings.json — ${validation.message}`,
-          "success",
+          "info",
         );
       } else {
         ctx.ui.notify(`Saved, but settings validation failed: ${validation.message}`, "warning");

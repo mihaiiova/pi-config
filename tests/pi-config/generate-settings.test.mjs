@@ -74,6 +74,19 @@ assert.deepEqual(
 );
 console.log("ok - subagent defaults route worker/oracle high, scout/reviewer small");
 
+// Extra persisted agents beyond the built-ins are preserved, not dropped.
+const extra = buildModelSettings({
+  tiers: config.tiers,
+  parentTier: "high",
+  subagentTiers: { worker: "high", scout: "small", reviewer: "small", oracle: "high", researcher: "medium" },
+});
+assert.deepEqual(extra.subagents.agentOverrides.researcher, { model: "openai/gpt-5" });
+assert.deepEqual(
+  Object.keys(extra.subagents.agentOverrides).sort(),
+  ["oracle", "researcher", "reviewer", "scout", "worker"],
+);
+console.log("ok - non-default subagents are preserved by generation");
+
 // ── 4. Missing/partial config yields sensible defaults, no crash ──
 assert.deepEqual(buildModelSettings(undefined), {});
 assert.deepEqual(buildModelSettings({}), {});
