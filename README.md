@@ -9,6 +9,7 @@ pi-config/
 ├── extensions/       # Custom TypeScript extensions
 │   ├── pi-sync/      #   /pi-sync — git push/pull + reconcile packages
 │   ├── pi-config/    #   /pi-config — model tiers, subagent routing, spec setup
+│   ├── project-state/#   /session-status, /session-history, /session-cost — local resume context + session history
 │   └── skills-select/ #  /skills-select — per-project skill allowlist
 ├── skills/           # Agent skills (SKILL.md directories)
 ├── prompts/          # Prompt templates (.md)
@@ -31,6 +32,9 @@ One-time setup and a live dashboard frame the lifecycle, with spec work landing 
 - `/spec-release` — merge the development branch into production and cut a tagged product release.
 - `/spec-status` — read-only dashboard: branches, lifecycle states, blockers, releasable work.
 - `/spec-cost` — report how much each spec skill cost (main agent + sub-agents).
+- `/session-status` — current local resume projection (branch/spec/phase) and session cost.
+- `/session-history` — recent finalized session records (date/spec/outcome/cost).
+- `/session-cost` — current, recent, and project-aggregate known session cost.
 
 Example (normal):
 
