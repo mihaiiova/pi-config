@@ -151,6 +151,8 @@ export function createSessionDocument(fields = {}) {
     model: null,
     /** Subagent routing from settings agentOverrides, or null. */
     subagentModels: null,
+    /** Per-agent subagent usage from reliable artifacts, or null. */
+    subagentUsage: null,
     provenance: {
       /** pi-config repository commit SHA, or null. */
       piConfigCommit: null,

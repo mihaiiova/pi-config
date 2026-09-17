@@ -23,8 +23,9 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { aggregateUsage, collectProvenance } from "./metadata.mjs";
+import { aggregateUsage, collectProvenance, collectSubagentUsage } from "./metadata.mjs";
 import { formatCost, formatHistory, formatStatus } from "./presentation.mjs";
+import { deriveActiveSpec, parseChangedFiles, parseSpecPhase } from "./reconcile.mjs";
 import { createStateDocument } from "./schema.mjs";
 import {
   createSession,
@@ -59,14 +60,6 @@ function currentBranch(cwd: string): string | null {
   return branch && branch !== "HEAD" ? branch : null;
 }
 
-/** Derive the active spec number from a `spec/<number>-<slug>` branch. */
-function deriveActiveSpec(branch: string | null): { number: number } | null {
-  const match = /^spec\/(\d+)-/.exec(branch ?? "");
-  if (!match) return null;
-  const number = Number(match[1]);
-  return Number.isInteger(number) && number > 0 ? { number } : null;
-}
-
 /** Read the authoritative lifecycle phase from GitHub labels, best-effort. */
 function readGhSpecPhase(number: number, cwd: string): string | null {
   try {
@@ -78,10 +71,7 @@ function readGhSpecPhase(number: number, cwd: string): string | null {
       .trim()
       .split("\n")
       .filter(Boolean);
-    const label = out.find((l) =>
-      ["spec:ready", "spec:in-progress", "spec:reviewed", "spec:done"].includes(l),
-    );
-    return label ? label.replace(/^spec:/, "") : null;
+    return parseSpecPhase(out);
   } catch {
     return null;
   }
@@ -115,16 +105,7 @@ function readSubagentModels(piDir: string): Record<string, unknown> | null {
 
 function changedFiles(cwd: string): string[] {
   const out = gitSafe(cwd, ["status", "--porcelain=v1"]);
-  if (out == null) return [];
-  const files: string[] = [];
-  for (const line of out.split("\n")) {
-    if (!line) continue;
-    let path = line.slice(3).trim();
-    const arrow = path.indexOf(" -> ");
-    if (arrow !== -1) path = path.slice(arrow + 4);
-    files.push(path);
-  }
-  return files;
+  return out == null ? [] : parseChangedFiles(out);
 }
 
 /** Load state without throwing: malformed/unsupported files read as missing. */
@@ -153,27 +134,39 @@ function liveUsage(ctx: ExtensionContext) {
   }
 }
 
+function reconcileContext(cwd: string) {
+  const branch = currentBranch(cwd);
+  const activeSpec = deriveActiveSpec(branch);
+  const phase = activeSpec ? readGhSpecPhase(activeSpec.number, cwd) : null;
+  return { branch, activeSpec, phase };
+}
+
+function persistProjection(
+  piDir: string,
+  context: { branch: string | null; activeSpec: { number: number } | null; phase: string | null },
+  lastSessionId: string | null,
+) {
+  writeStateAtomic(
+    piDir,
+    createStateDocument({
+      activeSpec: context.activeSpec,
+      phase: context.phase,
+      branch: context.branch,
+      checks: readChecks(piDir),
+      lastSessionId,
+    }),
+  );
+}
+
 // ── Extension ──────────────────────────────────────────────────
 
 export default function projectState(pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     const piDir = join(ctx.cwd, CONFIG_DIR_NAME);
     try {
-      const branch = currentBranch(ctx.cwd);
-      const activeSpec = deriveActiveSpec(branch);
-      const phase = activeSpec ? readGhSpecPhase(activeSpec.number, ctx.cwd) : null;
-
       const previous = loadStateSafe(piDir);
-      writeStateAtomic(
-        piDir,
-        createStateDocument({
-          activeSpec,
-          phase,
-          branch,
-          checks: readChecks(piDir),
-          lastSessionId: previous?.lastSessionId ?? null,
-        }),
-      );
+      const { branch, activeSpec, phase } = reconcileContext(ctx.cwd);
+      persistProjection(piDir, { branch, activeSpec, phase }, previous?.lastSessionId ?? null);
 
       currentSession = createSession({
         sessionId: ctx.sessionManager.getSessionId(),
@@ -201,38 +194,35 @@ export default function projectState(pi: ExtensionAPI) {
     const piDir = join(ctx.cwd, CONFIG_DIR_NAME);
     try {
       if (event.reason === "reload") {
-        // The same session continues under a fresh extension instance: keep
-        // the projection current without finalizing (which would be premature).
-        writeStateAtomic(
+        // The same session continues under a fresh extension instance: re-derive
+        // the projection from authoritative sources without finalizing (which
+        // would be premature).
+        persistProjection(
           piDir,
-          createStateDocument({
-            activeSpec: currentSession?.activeSpec ?? null,
-            phase: currentSession?.phase ?? null,
-            branch: currentSession?.branch ?? null,
-            checks: readChecks(piDir),
-            lastSessionId: loadStateSafe(piDir)?.lastSessionId ?? null,
-          }),
+          reconcileContext(ctx.cwd),
+          loadStateSafe(piDir)?.lastSessionId ?? null,
         );
         return;
       }
 
       if (currentSession) {
+        // Re-derive branch/spec/phase at the shutdown boundary so the write-once
+        // record reflects the current authoritative state, not the session-start
+        // snapshot (e.g. after /spec-start created a branch mid-session).
+        const context = reconcileContext(ctx.cwd);
+        currentSession.branch = context.branch;
+        currentSession.activeSpec = context.activeSpec;
+        currentSession.phase = context.phase;
         currentSession.usage = aggregateUsage(ctx.sessionManager.getEntries());
         currentSession.model = activeModel(ctx);
         currentSession.changedFiles = changedFiles(ctx.cwd);
+        currentSession.subagentUsage = currentSession.piSessionFile
+          ? collectSubagentUsage(dirname(currentSession.piSessionFile))
+          : null;
         currentSession.finalizedAt = new Date().toISOString();
         finalizeSession(piDir, currentSession);
 
-        writeStateAtomic(
-          piDir,
-          createStateDocument({
-            activeSpec: currentSession.activeSpec,
-            phase: currentSession.phase,
-            branch: currentSession.branch,
-            checks: readChecks(piDir),
-            lastSessionId: currentSession.sessionId,
-          }),
-        );
+        persistProjection(piDir, context, currentSession.sessionId);
       }
     } catch {
       // session_shutdown must never throw.
@@ -244,17 +234,12 @@ export default function projectState(pi: ExtensionAPI) {
   pi.on("session_before_compact", (_event, ctx) => {
     const piDir = join(ctx.cwd, CONFIG_DIR_NAME);
     try {
-      // Persist a minimal projection before compaction so resume context is
-      // available even if the process dies mid-compaction.
-      writeStateAtomic(
+      // Persist a minimal, freshly re-derived projection before compaction so
+      // resume context is available even if the process dies mid-compaction.
+      persistProjection(
         piDir,
-        createStateDocument({
-          activeSpec: currentSession?.activeSpec ?? null,
-          phase: currentSession?.phase ?? null,
-          branch: currentSession?.branch ?? null,
-          checks: readChecks(piDir),
-          lastSessionId: loadStateSafe(piDir)?.lastSessionId ?? null,
-        }),
+        reconcileContext(ctx.cwd),
+        loadStateSafe(piDir)?.lastSessionId ?? null,
       );
     } catch {
       // session_before_compact must never throw.

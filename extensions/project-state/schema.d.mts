@@ -55,6 +55,10 @@ export interface SessionRecord {
   usage: UsageTotals | null;
   model: { provider: string; model: string; thinkingLevel: string | null } | null;
   subagentModels: Record<string, unknown> | null;
+  subagentUsage: {
+    agents: Array<{ agent: string; runs: number; cost: number }>;
+    totalCost: number;
+  } | null;
   provenance: SessionProvenance;
 }
 

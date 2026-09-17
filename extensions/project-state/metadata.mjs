@@ -8,7 +8,7 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -67,6 +67,50 @@ function usageOf(entry) {
 
 function num(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * Aggregate reliably reported per-agent (subagent) usage from the Pi session
+ * directory's `subagent-artifacts/*_meta.json` files. Returns `null` when the
+ * directory is absent, empty, or holds no usable metadata — never fabricates a
+ * breakdown. This mirrors the artifact shape `/spec-cost` already treats as
+ * reliable (`agent`, `usage.cost`).
+ */
+export function collectSubagentUsage(sessionDir) {
+  if (typeof sessionDir !== "string" || !sessionDir) return null;
+  const dir = join(sessionDir, "subagent-artifacts");
+  let names;
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const perAgent = new Map();
+  for (const name of names) {
+    if (!name.endsWith("_meta.json")) continue;
+    let meta;
+    try {
+      meta = JSON.parse(readFileSync(join(dir, name), "utf-8"));
+    } catch {
+      continue;
+    }
+    const agent =
+      typeof meta?.agent === "string" && meta.agent.trim()
+        ? meta.agent.trim()
+        : "subagent";
+    const cost = num(meta?.usage?.cost);
+    const entry = perAgent.get(agent) ?? { agent, runs: 0, cost: 0 };
+    entry.runs += 1;
+    entry.cost += cost;
+    perAgent.set(agent, entry);
+  }
+  if (perAgent.size === 0) return null;
+  const agents = Array.from(perAgent.values()).sort((a, b) =>
+    a.agent < b.agent ? -1 : a.agent > b.agent ? 1 : 0,
+  );
+  let totalCost = 0;
+  for (const entry of agents) totalCost += entry.cost;
+  return { agents, totalCost };
 }
 
 /**

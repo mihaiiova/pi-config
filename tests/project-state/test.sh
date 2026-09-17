@@ -41,12 +41,22 @@ grep -Fq 'registerCommand("session-history"' "$source_file"
 grep -Fq 'registerCommand("session-cost"' "$source_file"
 pass "registers /session-status, /session-history, and /session-cost"
 
-# The persistence/metadata/presentation seams are wired, not reimplemented.
+# The persistence/metadata/presentation/reconcile seams are wired, not reimplemented.
 grep -Fq './state.mjs' "$source_file"
 grep -Fq './schema.mjs' "$source_file"
 grep -Fq './metadata.mjs' "$source_file"
 grep -Fq './presentation.mjs' "$source_file"
-pass "wires the pure state/schema/metadata/presentation modules"
+grep -Fq './reconcile.mjs' "$source_file"
+pass "wires the pure state/schema/metadata/presentation/reconcile modules"
+
+# Lifecycle boundaries re-derive branch/spec/phase from authoritative sources
+# (git + GitHub labels) rather than replaying the session-start snapshot, and
+# finalization records reliably reported per-agent subagent usage.
+grep -Fq 'reconcileContext(' "$source_file"
+grep -Fq 'persistProjection(' "$source_file"
+grep -Fq 'collectSubagentUsage(' "$source_file"
+grep -Fq 'subagentUsage' "$source_file"
+pass "reconciles context at lifecycle boundaries and records subagent usage"
 
 # Session identity and provenance come from the native read-only session API.
 grep -Fq 'ctx.sessionManager.getSessionId()' "$source_file"
@@ -66,6 +76,7 @@ node "$root/tests/project-state/schema.test.mjs"
 node "$root/tests/project-state/state.test.mjs"
 node "$root/tests/project-state/metadata.test.mjs"
 node "$root/tests/project-state/presentation.test.mjs"
+node "$root/tests/project-state/reconcile.test.mjs"
 
 echo
 echo "All project-state tests passed."
