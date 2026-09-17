@@ -29,6 +29,23 @@ There are only two planning artifacts:
 
 There is no ticket layer beneath a spec. If work cannot reasonably be implemented/reviewed as one cohesive spec, split it into an epic of specs.
 
+## Runtime state is not a planning artifact
+
+The `project-state` extension (`/session-status`, `/session-history`,
+`/session-cost`) writes local **runtime observability/resume data** — a mutable
+`.pi/state.json` projection and write-once `.pi/sessions/*.json` records. These
+are not a third planning artifact and never hold lifecycle authority:
+
+- GitHub issue lifecycle labels remain the authoritative spec state.
+- Git branch state remains authoritative for branch/merge state.
+- `.pi/state.json` is a non-authoritative projection that is re-derived from
+  git and GitHub labels at session boundaries and **loses on divergence**.
+
+Both runtime paths are gitignored by default; see
+`extensions/project-state/README.md` for the persisted-vs-unpersisted layout,
+schema/version semantics, and the stable session-record fields available for
+future cost/eval aggregation without duplicating `/spec-cost` parsing.
+
 ## Idea capture
 
 `/spec-draft` creates one shallow GitHub issue with the `idea` label. It is intentionally underdefined. `/spec-backlog` may later recommend `/spec-new #<issue>` when the idea remains valuable.
