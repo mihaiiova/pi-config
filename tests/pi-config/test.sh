@@ -72,5 +72,8 @@ ROOT="$root" node "$work/gen.mjs" "$work/settings.json"
 "$validator" "$work/settings.json" >/dev/null || fail "generated settings failed validation"
 pass "generated .pi/settings.json validates"
 
+# ── validate-settings.sh decisionThreshold edge cases ───────────
+"$root/tests/pi-config/validate-settings.test.sh"
+
 echo
 echo "All pi-config tests passed."

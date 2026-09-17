@@ -170,4 +170,51 @@ const cleared = generateSettings(
 assert.deepEqual(cleared, { spec: inferred, theme: "dark" });
 console.log("ok - generateSettings clears owned model keys, keeps spec and unrelated keys");
 
+// ── 8. decisionThreshold flows from config into spec ───────────
+const thresholdInferred = {
+  baseBranch: "development",
+  releaseBranch: "main",
+  tagPrefix: "v",
+  versionFile: "package.json",
+};
+
+// A configured threshold is emitted into settings.spec.decisionThreshold.
+const withThreshold = generateSettings(
+  { ...config, specDecisionThreshold: 0.6 },
+  {},
+  thresholdInferred,
+);
+assert.equal(withThreshold.spec.decisionThreshold, 0.6);
+
+// Idempotent: applying it to its own output with the same config is stable.
+const withThresholdTwice = generateSettings(
+  { ...config, specDecisionThreshold: 0.6 },
+  withThreshold,
+  thresholdInferred,
+);
+assert.deepEqual(withThresholdTwice, withThreshold);
+
+// Absent when the config does not configure it.
+const noThreshold = generateSettings({}, {}, thresholdInferred);
+assert.equal("decisionThreshold" in noThreshold.spec, false);
+
+// A configured value wins over a stale existing spec value.
+const changed = generateSettings(
+  { specDecisionThreshold: 0.3 },
+  { spec: { baseBranch: "development", decisionThreshold: 0.6 } },
+  thresholdInferred,
+);
+assert.equal(changed.spec.decisionThreshold, 0.3);
+
+// The key is documented in SPEC_KEYS: existing values survive reconciliation,
+// and inferred values fill gaps.
+assert.deepEqual(reconcileSpecBlock(undefined, { decisionThreshold: 0.6 }), {
+  decisionThreshold: 0.6,
+});
+assert.equal(
+  reconcileSpecBlock({ decisionThreshold: 0.4 }, thresholdInferred).decisionThreshold,
+  0.4,
+);
+console.log("ok - decisionThreshold flows from config, is idempotent, and reconciles");
+
 console.log("\nAll generate-settings tests passed.");

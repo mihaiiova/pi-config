@@ -38,6 +38,15 @@ if jq -e 'has("spec")' "$settings" >/dev/null 2>&1; then
     ' "$settings" >/dev/null 2>&1 \
       || fail "spec.release must use booleans for viaPullRequest/draft/bumpDevAfterRelease"
   fi
+
+  if jq -e '.spec | has("decisionThreshold")' "$settings" >/dev/null 2>&1; then
+    jq -e '
+      ((.spec.decisionThreshold | type == "number") and
+       (.spec.decisionThreshold >= 0) and
+       (.spec.decisionThreshold <= 1))
+    ' "$settings" >/dev/null 2>&1 \
+      || fail "spec.decisionThreshold must be a number in [0,1]"
+  fi
 fi
 
 echo "ok - settings valid ($settings)"
