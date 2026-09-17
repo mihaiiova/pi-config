@@ -66,7 +66,6 @@ assert.equal(state.activeSpec, null);
 assert.equal(state.phase, null);
 assert.equal(state.branch, null);
 assert.equal(state.lastSessionId, null);
-assert.equal(state.lastSessionFile, null);
 assert.equal(state.pendingWork, null);
 assert.equal(state.checks, null);
 assert.ok(typeof state.updatedAt === "string");

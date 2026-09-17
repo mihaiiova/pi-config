@@ -102,8 +102,6 @@ export function createStateDocument(fields = {}) {
     branch: null,
     /** Filesystem-safe id of the most recent finalized session, or null. */
     lastSessionId: null,
-    /** Pi session JSONL path of the most recent finalized session, or null. */
-    lastSessionFile: null,
     /** Reliably known pending work, or null. */
     pendingWork: null,
     /** Reliably known verification commands (`{ [name]: command }`), or null. */

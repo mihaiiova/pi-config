@@ -1,7 +1,6 @@
 export interface ActiveSpec {
   number: number;
   title?: string;
-  phase?: string;
 }
 
 export interface StateDocument {
@@ -10,7 +9,6 @@ export interface StateDocument {
   phase: string | null;
   branch: string | null;
   lastSessionId: string | null;
-  lastSessionFile: string | null;
   pendingWork: string | null;
   checks: Record<string, string> | null;
   updatedAt: string;

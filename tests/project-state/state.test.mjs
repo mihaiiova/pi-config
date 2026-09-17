@@ -37,7 +37,6 @@ const state = {
   activeSpec: { number: 10 },
   phase: "in-progress",
   lastSessionId: null,
-  lastSessionFile: null,
   pendingWork: null,
   checks: null,
   updatedAt: "2026-09-17T00:00:00.000Z",

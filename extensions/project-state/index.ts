@@ -162,9 +162,6 @@ export default function projectState(pi: ExtensionAPI) {
       const branch = currentBranch(ctx.cwd);
       const activeSpec = deriveActiveSpec(branch);
       const phase = activeSpec ? readGhSpecPhase(activeSpec.number, ctx.cwd) : null;
-      if (activeSpec && phase) {
-        (activeSpec as { number: number; phase?: string }).phase = phase;
-      }
 
       const previous = loadStateSafe(piDir);
       writeStateAtomic(
@@ -175,7 +172,6 @@ export default function projectState(pi: ExtensionAPI) {
           branch,
           checks: readChecks(piDir),
           lastSessionId: previous?.lastSessionId ?? null,
-          lastSessionFile: previous?.lastSessionFile ?? null,
         }),
       );
 
@@ -215,7 +211,6 @@ export default function projectState(pi: ExtensionAPI) {
             branch: currentSession?.branch ?? null,
             checks: readChecks(piDir),
             lastSessionId: loadStateSafe(piDir)?.lastSessionId ?? null,
-            lastSessionFile: loadStateSafe(piDir)?.lastSessionFile ?? null,
           }),
         );
         return;
@@ -236,7 +231,6 @@ export default function projectState(pi: ExtensionAPI) {
             branch: currentSession.branch,
             checks: readChecks(piDir),
             lastSessionId: currentSession.sessionId,
-            lastSessionFile: currentSession.piSessionFile,
           }),
         );
       }
@@ -260,7 +254,6 @@ export default function projectState(pi: ExtensionAPI) {
           branch: currentSession?.branch ?? null,
           checks: readChecks(piDir),
           lastSessionId: loadStateSafe(piDir)?.lastSessionId ?? null,
-          lastSessionFile: loadStateSafe(piDir)?.lastSessionFile ?? null,
         }),
       );
     } catch {
