@@ -27,6 +27,7 @@ const SPEC_KEYS = [
   "changelogFile",
   "checks",
   "release",
+  "decisionThreshold",
 ];
 
 /** Model-default keys this module owns inside .pi/settings.json. */
@@ -127,6 +128,7 @@ export function reconcileSpecBlock(existingSpec, inferred) {
  * spec yields the same object (deep-equal).
  */
 export function generateSettings(config, existingSettings, inferredSpec) {
+  const cfg = isPlainObject(config) ? config : {};
   const base = isPlainObject(existingSettings) ? existingSettings : {};
   const out = { ...base };
 
@@ -149,6 +151,13 @@ export function generateSettings(config, existingSettings, inferredSpec) {
   }
 
   const spec = reconcileSpecBlock(base.spec, inferredSpec);
+  // `decisionThreshold` is a user choice stored in the pi-config config, not a
+  // repo fact: when configured it is authoritative over any stale existing
+  // value; when unconfigured, reconcileSpecBlock already preserves whatever
+  // value was documented in the existing settings.
+  if (cfg.specDecisionThreshold !== undefined) {
+    spec.decisionThreshold = cfg.specDecisionThreshold;
+  }
   if (Object.keys(spec).length > 0) out.spec = spec;
   else delete out.spec;
 
