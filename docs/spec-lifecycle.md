@@ -108,6 +108,7 @@ The lifecycle reads optional settings from `.pi/settings.json` in the target rep
     "tagPrefix": "v",
     "versionFile": "package.json",
     "changelogFile": "CHANGELOG.md",
+    "decisionThreshold": 0.6,
     "checks": {
       "test": "npm test",
       "typecheck": "tsc --noEmit",
@@ -130,6 +131,7 @@ The lifecycle reads optional settings from `.pi/settings.json` in the target rep
 | `tagPrefix` | `v` | `/spec-release` |
 | `versionFile` | none (auto-detect) | `/spec-release` |
 | `changelogFile` | none (GitHub notes only) | `/spec-release` |
+| `decisionThreshold` | `0.6` | `/spec-new` (graded interview: how much to ask) |
 | `checks` | none (discover per run) | `/spec-review` |
 | `release.viaPullRequest` | `false` | `/spec-release` (protected production branch) |
 | `release.draft` | `false` | `/spec-release` |

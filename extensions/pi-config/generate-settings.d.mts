@@ -7,6 +7,7 @@ export interface PiConfig {
   tiers: Record<string, Tier>;
   parentTier?: string;
   subagentTiers?: Record<string, string>;
+  specDecisionThreshold?: number;
 }
 
 export interface SpecFacts {
@@ -17,6 +18,7 @@ export interface SpecFacts {
   changelogFile?: string;
   checks?: Record<string, string>;
   release?: Record<string, unknown>;
+  decisionThreshold?: number;
 }
 
 export interface SplitModelRef {

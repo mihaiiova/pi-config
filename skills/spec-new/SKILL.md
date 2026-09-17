@@ -27,13 +27,34 @@ It may inspect the codebase as deeply as needed to resolve design facts — via 
 
    Prefer a **normal spec** when the work is one cohesive outcome, even if it touches several technical layers or modules. Crossing frontend/backend/database boundaries alone is not a reason for an epic. Do not create a child spec solely because a technical prerequisite exists; keep prerequisites inside the parent spec unless they have independent architectural or product value. Prefer vertical/tracer-bullet children over layer-based decomposition.
 
-3. **Interview for decisions.** Run `/grill-me` (`grilling`): one material decision at a time, recommend an answer, and wait for the user's answer before the next. Use `/domain-modeling` where terminology or ADRs genuinely need updating. Do not publish until shared understanding is reached.
+3. **Interview for decisions with a graded interview.** Grade every candidate decision on how much it needs the user's input, then ask only what is genuinely theirs. Never ask for a discoverable fact — resolve those via the scout first.
+
+   **Grading rubric.** Each candidate decision gets an `ask_grade` in `[0,1]`:
+   - `0` when the answer is discoverable (a scout can resolve a fact or convention from code/docs/ADRs);
+   - otherwise `max(irreversibility, ambiguity, preference, blast_radius)`, each dimension anchored `0–1`:
+     - *irreversibility* — `0` trivial rename … `1` public API/schema/migration/versioning;
+     - *ambiguity* — `0` a repo convention or ADR decides … `1` several defensible answers, no precedent;
+     - *preference* — `0` pure technical fact … `1` product/taste/business tradeoff only the user holds;
+     - *blast radius* — `0` one file/spec … `1` shared contract other skills/people rely on.
+   Max (not average): one decisive factor triggers the ask. Record the grade and a one-line reason for every candidate decision.
+
+   **Threshold.** `spec.decisionThreshold` in `.pi/settings.json` (default `0.6`, configurable per project via `/pi-config`). Lower = more questions / more agency; higher = fewer.
+
+   **Asking.** Every decision with `ask_grade >= decisionThreshold` is surfaced as a question, sorted by grade (descending), until the queue is empty — no cap on the number asked. The question tool's per-call limit is a transport detail, not a cap. Each surfaced question carries, alongside the question text and options: the grade, the reason for that grade, and a recommendation. Ask via `/grill-me` (`grilling`) one at a time; the general one-at-a-time primitive is unchanged, and remains the escape hatch for deciding incrementally.
+
+   **Auto-decided.** Everything below the threshold is decided from repo conventions/defaults and recorded in the spec body under an `Auto-decided` section (decision + convention/default used + grade); the user may veto any of them.
+
+   Use `/domain-modeling` where terminology or ADRs genuinely need updating. Do not publish until shared understanding is reached.
 
 4. **Capture decisions as they settle.** They become Implementation Decisions and Testing Decisions.
 
    When a spec replaces an existing transport, flow, or surface, enumerate the user-visible affordances that path carries today — composer controls, pickers, links, side effects — and state each one's fate: preserved, replaced, or dropped. A dropped affordance the UI still renders is a decision to record in the spec, not an implementation detail to discover during review.
 
 5. **Synthesize specs.** Use `/to-spec`'s structure (Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope, Further Notes), skipping its publishing step. Testing Decisions must name the public seams `/tdd` will exercise. For an epic, every child is a complete spec suitable for `/spec-start` without another broad requirements interview.
+
+   **Test-seam check.** Before publishing, verify Testing Decisions names at least one concrete public seam (module/function), resolved by the scout. If no concrete seam is named, stop with the gap explained — do not mark the spec ready.
+
+   **Consistency check.** Before publishing, run a cross-cutting consistency pass: flag decisions that conflict with documented repo behavior (release/versioning flow, branch model, existing skill contracts). Surface conflicts as high-grade questions or record them as decisions.
 
 6. **Generate a plan identity.** Every plan has an opaque `plan_id` generated once (UUID or similarly collision-resistant identifier). Reuse the same `plan_id` when resuming/re-running the same definition. Do not derive identity from a title or slug. Artifact `id` fields remain readable stable kebab-case identifiers within that plan.
 
@@ -96,10 +117,10 @@ It may inspect the codebase as deeply as needed to resolve design facts — via 
 `scout` is a **read-only** subagent: it inspects and reports, never edits. Launch it with a compact brief:
 
 - **Objective.** Produce the repository-context handoff the parent consumes mechanically.
-- **Scope.** Read every applicable `AGENTS.md`, `CONTEXT.md` (if present), ADRs, the domain glossary, and the area the change touches; resolve design facts by exploring the codebase.
+- **Scope.** Read every applicable `AGENTS.md`, `CONTEXT.md` (if present), ADRs, the domain glossary, and the area the change touches; resolve design facts by exploring the codebase. Also resolve the concrete public testing seam and the cross-cutting consistency pass (conflicts with documented repo behavior).
 - **Authority.** Read-only — do not modify files, create branches, or edit issues.
 - **Output.** Write `.pi/artifacts/spec-new/scout-handoff.md` in the stable format below.
-- **Done when.** The handoff answers the design facts the interview and synthesis need, so the parent never re-reads the repository.
+- **Done when.** The handoff answers the design facts the interview and synthesis need — including the testing seam and cross-cutting consistency — so the parent never re-reads the repository.
 
 Stable handoff format (the parent parses it):
 
@@ -112,6 +133,9 @@ Stable handoff format (the parent parses it):
 
 ## Area touched
 <modules/files the change touches, and each design fact resolved>
+
+## Cross-cutting consistency
+<conflicts between proposed decisions and documented repo behavior — release/versioning flow, branch model, existing skill contracts>
 
 ## Open questions
 <facts the scout could not resolve — the only things the parent may ask the user>

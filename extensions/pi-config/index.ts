@@ -42,6 +42,14 @@ const DEFAULT_TIER_THINKING: Record<string, string> = {
 
 const CUSTOM_MODEL_SENTINEL = "⌨️ Type a custom model (provider/model-id)";
 
+const DECISION_THRESHOLD_PRESETS = [
+  { label: "0.6 (balanced — default)", value: 0.6 },
+  { label: "0.3 (ask more)", value: 0.3 },
+  { label: "0.9 (ask less)", value: 0.9 },
+] as const;
+
+const CUSTOM_THRESHOLD_SENTINEL = "⌨️ Enter a custom threshold (0–1)";
+
 // ── File I/O ───────────────────────────────────────────────────
 
 function loadJson<T>(path: string): T | undefined {
@@ -96,6 +104,17 @@ function optionsWithCurrentFirst(options: string[], current?: string): string[] 
     return [current, ...options.filter((o) => o !== current)];
   }
   return options;
+}
+
+function thresholdLabel(value: number): string {
+  const preset = DECISION_THRESHOLD_PRESETS.find((p) => p.value === value);
+  return preset ? preset.label : `${value} (current)`;
+}
+
+function parseThreshold(raw: string): number | undefined {
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0 || value > 1) return undefined;
+  return value;
 }
 
 // ── Spec facts (mirrors /spec-init inference) ──────────────────
@@ -274,7 +293,48 @@ export default function piConfig(pi: ExtensionAPI) {
         subagentTiers[agent] = tier;
       }
 
-      const nextConfig: PiConfig = { tiers, parentTier, subagentTiers };
+      const currentThreshold =
+        typeof current.specDecisionThreshold === "number"
+          ? current.specDecisionThreshold
+          : 0.6;
+      const currentThresholdLabel = thresholdLabel(currentThreshold);
+      const presetLabels = DECISION_THRESHOLD_PRESETS.map((p) => p.label);
+      const thresholdOptions = [
+        ...presetLabels,
+        ...(presetLabels.includes(currentThresholdLabel) ? [] : [currentThresholdLabel]),
+        CUSTOM_THRESHOLD_SENTINEL,
+      ];
+      const thresholdChoice = await ctx.ui.select(
+        "Spec interview decision threshold (lower = more questions):",
+        optionsWithCurrentFirst(thresholdOptions, currentThresholdLabel),
+      );
+      if (thresholdChoice === undefined) return;
+
+      let specDecisionThreshold: number;
+      if (thresholdChoice === CUSTOM_THRESHOLD_SENTINEL) {
+        const raw = await ctx.ui.input(
+          "Decision threshold (0–1):",
+          String(currentThreshold),
+        );
+        if (!raw) return;
+        const parsed = parseThreshold(raw);
+        if (parsed === undefined) {
+          ctx.ui.notify("Decision threshold must be a number in [0,1]", "error");
+          return;
+        }
+        specDecisionThreshold = parsed;
+      } else {
+        specDecisionThreshold =
+          DECISION_THRESHOLD_PRESETS.find((p) => p.label === thresholdChoice)?.value ??
+          currentThreshold;
+      }
+
+      const nextConfig: PiConfig = {
+        tiers,
+        parentTier,
+        subagentTiers,
+        specDecisionThreshold,
+      };
 
       const edited = await ctx.ui.editor(
         "Review .pi/pi-config.json",
