@@ -1,0 +1,76 @@
+export interface ActiveSpec {
+  number: number;
+  title?: string;
+  phase?: string;
+}
+
+export interface StateDocument {
+  schemaVersion: number;
+  activeSpec: ActiveSpec | null;
+  phase: string | null;
+  branch: string | null;
+  lastSessionId: string | null;
+  lastSessionFile: string | null;
+  pendingWork: string | null;
+  checks: Record<string, string> | null;
+  updatedAt: string;
+}
+
+export interface UsageTotals {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  totalTokens: number;
+  cost: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+    total: number;
+  };
+}
+
+export interface SessionProvenance {
+  piConfigCommit: string | null;
+  piVersion: string | null;
+  piSessionFormatVersion: number | null;
+  productVersion: string | null;
+  configHash: string | null;
+}
+
+export interface SessionRecord {
+  schemaVersion: number;
+  sessionId: string;
+  piSessionId: string | null;
+  piSessionFile: string | null;
+  cwd: string | null;
+  startedAt: string | null;
+  finalizedAt: string | null;
+  summary: string | null;
+  outcome: string | null;
+  activeSpec: ActiveSpec | null;
+  phase: string | null;
+  branch: string | null;
+  changedFiles: string[];
+  checkResults: Record<string, unknown> | null;
+  usage: UsageTotals | null;
+  model: { provider: string; model: string; thinkingLevel: string | null } | null;
+  subagentModels: Record<string, unknown> | null;
+  provenance: SessionProvenance;
+}
+
+export const SCHEMA_VERSION: number;
+export class SchemaError extends Error {
+  constructor(message: string);
+}
+export const MIGRATIONS: Readonly<Record<number, (doc: Record<string, any>) => Record<string, any>>>;
+export function migrateDocument(
+  doc: unknown,
+  options?: {
+    targetVersion?: number;
+    migrations?: Record<number, (doc: Record<string, any>) => Record<string, any>>;
+  },
+): Record<string, any>;
+export function createStateDocument(fields?: Record<string, any>): StateDocument;
+export function createSessionDocument(fields?: Record<string, any>): SessionRecord;
