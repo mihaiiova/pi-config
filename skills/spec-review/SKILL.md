@@ -38,6 +38,8 @@ Verify the implementation on the current spec branch and mark it reviewed only w
 
 6. **Verify acceptance criteria.** Every criterion needs evidence from code/tests. A practical behavior without regression-test evidence where a test is reasonable remains partial.
 
-7. **Produce a consolidated report.** Include verification, Standards, Spec matrix, session-review outcomes, and any blockers.
+7. **Verify user-facing documentation is current.** When the change adds, changes, or removes a command, flag, behavior, or other user-facing functionality, confirm the README (and, where the repository's `AGENTS.md` requires it, `docs/` and `CHANGELOG.md`) reflects the new functionality with a worked example. A README that is missing or stale for a shipped capability is a documented-standard violation and a blocker, not a follow-up.
 
-8. **Transition state.** Only with no blockers, make `spec:reviewed` the spec's sole lifecycle-state label: remove `spec:ready`, `spec:in-progress`, and `spec:done`, then apply `spec:reviewed`. If blockers remain, leave the current state unchanged and list exactly what must be resolved before `/spec-close`.
+8. **Produce a consolidated report.** Include verification, Standards, Spec matrix, session-review outcomes, documentation status, and any blockers.
+
+9. **Transition state.** Only with no blockers, make `spec:reviewed` the spec's sole lifecycle-state label: remove `spec:ready`, `spec:in-progress`, and `spec:done`, then apply `spec:reviewed`. If blockers remain, leave the current state unchanged and list exactly what must be resolved before `/spec-close`.
