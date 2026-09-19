@@ -38,3 +38,10 @@ console.log("ok - detectWorkflow ignores non-spec commands");
 assert.equal(detectWorkflow([assistant(), user("/spec-audit")]), "spec-audit");
 assert.equal(detectWorkflow([assistant()]), null);
 console.log("ok - detectWorkflow only reads user messages");
+
+// ── 7. Prose/paths mentioning spec-* are not commands → null ──
+assert.equal(detectWorkflow([user("read docs/spec-lifecycle.md for details")]), null);
+assert.equal(detectWorkflow([user("the spec-review process is next")]), null);
+assert.equal(detectWorkflow([user("artifacts live in .pi/artifacts/spec-review/run-a")]), null);
+assert.equal(detectWorkflow([user("I want to /spec-start #10 now")]), "spec-start");
+console.log("ok - detectWorkflow only matches the /spec-* command form, not prose");

@@ -13,15 +13,18 @@
  * command. Returns the bare skill name (the `skill:` prefix, when present, is
  * stripped) or `null` when no such command appears.
  *
- * The command vocabulary is shared with `/spec-cost`'s skill detection and
- * matches the `/spec-*` skill names plus the `/skill:spec-*` invocation form.
+ * The match is anchored to the command form — a `/` (or `/skill:`) prefix at
+ * the start of a message or after whitespace — so prose that merely mentions a
+ * `spec-*` token (a path, filename, or discussion of a skill) never produces a
+ * workflow. The command vocabulary matches the `/spec-*` skill names plus the
+ * `/skill:spec-*` invocation form.
  */
 export function detectWorkflow(entries) {
   for (const entry of entries ?? []) {
     if (entry?.type !== "message") continue;
     if (entry.message?.role !== "user") continue;
-    const match = userText(entry.message).match(/(?:skill:)?spec-[a-z-]+/);
-    if (match) return match[0].replace(/^skill:/, "");
+    const match = userText(entry.message).match(/(?:^|\s)\/(?:skill:)?(spec-[a-z-]+)/);
+    if (match) return match[1];
   }
   return null;
 }

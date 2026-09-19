@@ -125,12 +125,14 @@ export function collectSubagentUsage(sessionDir) {
 
 /**
  * Derive a per-agent run status from each run's `exitCode`.
- * `completed` when every run exited 0, `failed` when any run exited non-zero,
- * and `null` when any run lacks an integer `exitCode` (null beats wrong).
+ * `failed` when any run exited non-zero, `completed` when every run exited 0,
+ * and `null` when no run failed but some run lacks an integer `exitCode`
+ * (a known failure wins; null beats wrong for the rest).
  */
 function statusOf(exitCodes) {
+  if (exitCodes.some((code) => code !== null && code !== 0)) return "failed";
   if (exitCodes.some((code) => code === null)) return null;
-  return exitCodes.some((code) => code !== 0) ? "failed" : "completed";
+  return "completed";
 }
 
 /**
@@ -148,7 +150,8 @@ function modelOf(models) {
  * Returns the parsed `{ [checkName]: "passed" | "failed" }` object from the
  * newest `results.json` file (optionally restricted to files written at or
  * after `since`, an epoch-millisecond boundary), or `null` when none exists,
- * it is outside the window, or it is malformed/wrong-shaped.
+ * it is outside the window, or it is malformed/wrong-shaped (including any
+ * value other than `"passed"`/`"failed"`).
  */
 export function readCheckResults(artifactsRoot, { since } = {}) {
   if (typeof artifactsRoot !== "string" || !artifactsRoot) return null;
@@ -162,7 +165,13 @@ export function readCheckResults(artifactsRoot, { since } = {}) {
   } catch {
     return null;
   }
-  return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  return isCheckResults(parsed) ? parsed : null;
+}
+
+/** True for a `{ [name]: "passed" | "failed" }` object, false otherwise. */
+function isCheckResults(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  return Object.values(value).every((v) => v === "passed" || v === "failed");
 }
 
 /** Recursively collect `results.json` paths newer than (or at) `since`. */

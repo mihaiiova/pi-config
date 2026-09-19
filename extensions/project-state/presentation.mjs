@@ -33,7 +33,8 @@ export function formatStatus(state, currentUsage) {
 /**
  * Render recent session records for `/session-history` as one line each:
  * date, spec, workflow, outcome, delegation roles, known cost, and a concise
- * summary when present. Old records without the new fields render unchanged.
+ * summary when present. A record with no workflow renders as `general`; old
+ * records without the new fields render unchanged.
  */
 export function formatHistory(records, { limit = 10 } = {}) {
   const list = (records ?? []).slice(0, limit);

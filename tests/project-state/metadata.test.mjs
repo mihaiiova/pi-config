@@ -183,6 +183,17 @@ assert.equal(conflict.agents.length, 1);
 assert.equal(conflict.agents[0].status, "completed");
 assert.equal(conflict.agents[0].model, null);
 
+// Mixed non-zero + missing exitCode → "failed" (a known failure wins).
+const mixedDir = join(temp, "sess-mixed");
+const mixedArt = join(mixedDir, "subagent-artifacts");
+mkdirSync(mixedArt, { recursive: true });
+writeFileSync(join(mixedArt, "a_meta.json"), JSON.stringify({ agent: "worker", exitCode: 1, model: "m", usage: { cost: 1 } }));
+writeFileSync(join(mixedArt, "b_meta.json"), JSON.stringify({ agent: "worker", model: "m", usage: { cost: 1 } }));
+const mixed = collectSubagentUsage(mixedDir);
+assert.equal(mixed.agents.length, 1);
+assert.equal(mixed.agents[0].status, "failed");
+console.log("ok - collectSubagentUsage marks a known failure as failed despite a missing exitCode");
+
 assert.equal(collectSubagentUsage("no-sess"), null);
 assert.equal(collectSubagentUsage(null), null);
 assert.equal(collectSubagentUsage(undefined), null);
@@ -212,6 +223,13 @@ assert.equal(readCheckResults(badRoot), null);
 writeFileSync(join(badRoot, "results.json"), JSON.stringify(["not", "an", "object"]));
 assert.equal(readCheckResults(badRoot), null);
 console.log("ok - readCheckResults nulls on malformed or wrong-shape results.json");
+
+// Values other than "passed"/"failed" → null (unrelated results.json files).
+writeFileSync(join(badRoot, "results.json"), JSON.stringify({ unit: "passed", extra: 42 }));
+assert.equal(readCheckResults(badRoot), null);
+writeFileSync(join(badRoot, "results.json"), JSON.stringify({ numFailedTests: 0 }));
+assert.equal(readCheckResults(badRoot), null);
+console.log("ok - readCheckResults nulls when a value is not passed/failed");
 
 // Absent results.json → null, and the `since` window filters stale results.
 assert.equal(readCheckResults(join(temp, "no-checks")), null);

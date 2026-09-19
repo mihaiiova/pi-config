@@ -52,7 +52,7 @@ export interface SessionRecord {
   phase: string | null;
   branch: string | null;
   changedFiles: string[];
-  checkResults: Record<string, unknown> | null;
+  checkResults: Record<string, string> | null;
   usage: UsageTotals | null;
   model: { provider: string; model: string; thinkingLevel: string | null } | null;
   subagentModels: Record<string, unknown> | null;
