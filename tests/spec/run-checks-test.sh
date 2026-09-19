@@ -22,6 +22,8 @@ assert_not_contains "$work/pass.out" "hidden unit output"
 assert_not_contains "$work/pass.out" "hidden lint output"
 assert_contains "$artifacts/unit.log" "hidden unit output"
 assert_contains "$artifacts/lint_check.log" "hidden lint output"
+jq -e '.unit == "passed" and .["lint check"] == "passed"' "$artifacts/results.json" >/dev/null \
+  || fail "results.json should record each check as passed"
 pass "successful logs are captured without being printed"
 
 # Failures print only a bounded tail, preserve the exit code aggregate, and do
@@ -38,6 +40,8 @@ assert_contains "$work/fail.out" "line-50"
 assert_contains "$work/fail.out" "$artifacts/broken.log"
 [[ -f "$work/later" ]] || fail "later checks must run after a failure"
 assert_contains "$artifacts/broken.log" "line-1"
+jq -e '.broken == "failed" and .later == "passed"' "$artifacts/results.json" >/dev/null \
+  || fail "results.json should record failed and passed outcomes"
 pass "failures are bounded and do not stop later checks"
 
 # Project-specific named commands come from settings without shell re-parsing.
@@ -53,6 +57,8 @@ assert_contains "$work/settings.out" "PASS type check"
 assert_contains "$work/settings.out" "PASS test"
 assert_not_contains "$work/settings.out" "settings-output"
 assert_contains "$work/artifacts-settings/type_check.log" "settings-output"
+jq -e '.["type check"] == "passed" and .test == "passed"' "$work/artifacts-settings/results.json" >/dev/null \
+  || fail "results.json should record settings-defined checks"
 pass "settings-defined checks run from the product root"
 
 echo "All run-checks tests passed."
