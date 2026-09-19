@@ -77,6 +77,7 @@ node "$root/tests/project-state/state.test.mjs"
 node "$root/tests/project-state/metadata.test.mjs"
 node "$root/tests/project-state/presentation.test.mjs"
 node "$root/tests/project-state/reconcile.test.mjs"
+node "$root/tests/project-state/workflow.test.mjs"
 
 echo
 echo "All project-state tests passed."
