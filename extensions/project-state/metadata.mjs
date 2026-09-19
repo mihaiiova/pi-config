@@ -73,8 +73,9 @@ function num(value) {
  * Aggregate reliably reported per-agent (subagent) usage from the Pi session
  * directory's `subagent-artifacts/*_meta.json` files. Returns `null` when the
  * directory is absent, empty, or holds no usable metadata — never fabricates a
- * breakdown. This mirrors the artifact shape `/spec-cost` already treats as
- * reliable (`agent`, `usage.cost`).
+ * breakdown. Each agent entry carries `status` (derived from `exitCode`), the
+ * actual `model`, and summed `cost` from the reliable `agent`/`usage.cost`
+ * artifact fields.
  */
 export function collectSubagentUsage(sessionDir) {
   if (typeof sessionDir !== "string" || !sessionDir) return null;
@@ -99,18 +100,45 @@ export function collectSubagentUsage(sessionDir) {
         ? meta.agent.trim()
         : "subagent";
     const cost = num(meta?.usage?.cost);
-    const entry = perAgent.get(agent) ?? { agent, runs: 0, cost: 0 };
+    const entry =
+      perAgent.get(agent) ?? { agent, runs: 0, cost: 0, exitCodes: [], models: [] };
     entry.runs += 1;
     entry.cost += cost;
+    entry.exitCodes.push(Number.isInteger(meta?.exitCode) ? meta.exitCode : null);
+    entry.models.push(
+      typeof meta?.model === "string" && meta.model.trim() ? meta.model.trim() : null,
+    );
     perAgent.set(agent, entry);
   }
   if (perAgent.size === 0) return null;
-  const agents = Array.from(perAgent.values()).sort((a, b) =>
-    a.agent < b.agent ? -1 : a.agent > b.agent ? 1 : 0,
-  );
+  const agents = Array.from(perAgent.values())
+    .map(({ exitCodes, models, ...rest }) => ({
+      ...rest,
+      status: statusOf(exitCodes),
+      model: modelOf(models),
+    }))
+    .sort((a, b) => (a.agent < b.agent ? -1 : a.agent > b.agent ? 1 : 0));
   let totalCost = 0;
   for (const entry of agents) totalCost += entry.cost;
   return { agents, totalCost };
+}
+
+/**
+ * Derive a per-agent run status from each run's `exitCode`.
+ * `completed` when every run exited 0, `failed` when any run exited non-zero,
+ * and `null` when any run lacks an integer `exitCode` (null beats wrong).
+ */
+function statusOf(exitCodes) {
+  if (exitCodes.some((code) => code === null)) return null;
+  return exitCodes.some((code) => code !== 0) ? "failed" : "completed";
+}
+
+/**
+ * Resolve a per-agent model from each run's reported model. Returns the model
+ * when every run agrees, and `null` on disagreement or when none reports one.
+ */
+function modelOf(models) {
+  return models.every((m) => m === models[0]) ? models[0] : null;
 }
 
 /**

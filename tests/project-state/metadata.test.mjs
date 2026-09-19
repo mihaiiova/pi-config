@@ -138,15 +138,15 @@ const artDir = join(sessDir, "subagent-artifacts");
 mkdirSync(artDir, { recursive: true });
 writeFileSync(
   join(artDir, "a_meta.json"),
-  JSON.stringify({ agent: "reviewer", timestamp: 1, usage: { cost: 0.25 } }),
+  JSON.stringify({ agent: "reviewer", exitCode: 0, model: "gpt-4", timestamp: 1, usage: { cost: 0.25 } }),
 );
 writeFileSync(
   join(artDir, "b_meta.json"),
-  JSON.stringify({ agent: "reviewer", timestamp: 2, usage: { cost: 0.5 } }),
+  JSON.stringify({ agent: "reviewer", exitCode: 0, model: "gpt-4", timestamp: 2, usage: { cost: 0.5 } }),
 );
 writeFileSync(
   join(artDir, "c_meta.json"),
-  JSON.stringify({ agent: "worker", timestamp: 3, usage: { cost: 1.5 } }),
+  JSON.stringify({ agent: "worker", exitCode: 1, model: "gpt-5", timestamp: 3, usage: { cost: 1.5 } }),
 );
 writeFileSync(join(artDir, "ignored.txt"), "not a meta file");
 writeFileSync(join(artDir, "bad_meta.json"), "{ not json");
@@ -158,12 +158,32 @@ assert.equal(sub.totalCost, 0.25 + 0.5 + 1.5 + 0.1);
 const reviewer = sub.agents.find((a) => a.agent === "reviewer");
 assert.equal(reviewer.runs, 2);
 assert.equal(reviewer.cost, 0.75);
+assert.equal(reviewer.status, "completed");
+assert.equal(reviewer.model, "gpt-4");
+const worker = sub.agents.find((a) => a.agent === "worker");
+assert.equal(worker.runs, 1);
+assert.equal(worker.cost, 1.5);
+assert.equal(worker.status, "failed");
+assert.equal(worker.model, "gpt-5");
 const fallback = sub.agents.find((a) => a.agent === "subagent");
 assert.equal(fallback.runs, 1);
 assert.equal(fallback.cost, 0.1);
+assert.equal(fallback.status, null);
+assert.equal(fallback.model, null);
 
-assert.equal(collectSubagentUsage(join(temp, "no-sess")), null);
+// Conflicting models across runs resolve to null — null beats wrong.
+const conflictDir = join(temp, "sess-conflict");
+const conflictArt = join(conflictDir, "subagent-artifacts");
+mkdirSync(conflictArt, { recursive: true });
+writeFileSync(join(conflictArt, "x_meta.json"), JSON.stringify({ agent: "scout", exitCode: 0, model: "m-a", usage: { cost: 1 } }));
+writeFileSync(join(conflictArt, "y_meta.json"), JSON.stringify({ agent: "scout", exitCode: 0, model: "m-b", usage: { cost: 1 } }));
+const conflict = collectSubagentUsage(conflictDir);
+assert.equal(conflict.agents.length, 1);
+assert.equal(conflict.agents[0].status, "completed");
+assert.equal(conflict.agents[0].model, null);
+
+assert.equal(collectSubagentUsage("no-sess"), null);
 assert.equal(collectSubagentUsage(null), null);
 assert.equal(collectSubagentUsage(undefined), null);
 assert.equal(collectSubagentUsage(""), null);
-console.log("ok - collectSubagentUsage aggregates per-agent cost and nulls when absent");
+console.log("ok - collectSubagentUsage aggregates per-agent status/model/cost and nulls when absent");

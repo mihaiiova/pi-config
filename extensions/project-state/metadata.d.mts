@@ -8,7 +8,13 @@ export function readPiConfigCommit(piConfigRoot: string): string | null;
 export function collectSubagentUsage(
   sessionDir: string | null | undefined,
 ): {
-  agents: Array<{ agent: string; runs: number; cost: number }>;
+  agents: Array<{
+    agent: string;
+    runs: number;
+    cost: number;
+    status: "completed" | "failed" | null;
+    model: string | null;
+  }>;
   totalCost: number;
 } | null;
 export function collectProvenance(input: {
