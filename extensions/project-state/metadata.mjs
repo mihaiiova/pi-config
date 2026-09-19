@@ -8,7 +8,7 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -139,6 +139,58 @@ function statusOf(exitCodes) {
  */
 function modelOf(models) {
   return models.every((m) => m === models[0]) ? models[0] : null;
+}
+
+/**
+ * Read the newest machine-readable check summary (`results.json`) under an
+ * artifacts directory. `run-checks.sh` writes one alongside its logs.
+ *
+ * Returns the parsed `{ [checkName]: "passed" | "failed" }` object from the
+ * newest `results.json` file (optionally restricted to files written at or
+ * after `since`, an epoch-millisecond boundary), or `null` when none exists,
+ * it is outside the window, or it is malformed/wrong-shaped.
+ */
+export function readCheckResults(artifactsRoot, { since } = {}) {
+  if (typeof artifactsRoot !== "string" || !artifactsRoot) return null;
+  const bound = Number.isFinite(since) ? since : null;
+  const files = findResultsFiles(artifactsRoot, bound);
+  if (files.length === 0) return null;
+  files.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  for (const file of files) {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(file.path, "utf-8"));
+    } catch {
+      continue;
+    }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+  }
+  return null;
+}
+
+/** Recursively collect `results.json` paths newer than (or at) `since`. */
+function findResultsFiles(dir, since, out = []) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      findResultsFiles(full, since, out);
+    } else if (entry.name === "results.json") {
+      let st;
+      try {
+        st = statSync(full);
+      } catch {
+        continue;
+      }
+      if (since == null || st.mtimeMs >= since) out.push({ path: full, mtimeMs: st.mtimeMs });
+    }
+  }
+  return out;
 }
 
 /**

@@ -25,3 +25,7 @@ export function collectProvenance(input: {
   piVersion?: string;
   piSessionFormatVersion?: number;
 }): Record<string, any>;
+export function readCheckResults(
+  artifactsRoot: string | null | undefined,
+  options?: { since?: number },
+): Record<string, string> | null;

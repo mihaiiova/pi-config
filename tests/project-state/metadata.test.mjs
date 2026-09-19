@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -10,6 +10,7 @@ import {
   readPiConfigCommit,
   collectProvenance,
   collectSubagentUsage,
+  readCheckResults,
 } from "../../extensions/project-state/metadata.mjs";
 
 const temp = mkdtempSync(join(tmpdir(), "project-state-meta-"));
@@ -187,3 +188,35 @@ assert.equal(collectSubagentUsage(null), null);
 assert.equal(collectSubagentUsage(undefined), null);
 assert.equal(collectSubagentUsage(""), null);
 console.log("ok - collectSubagentUsage aggregates per-agent status/model/cost and nulls when absent");
+
+// ── 9. readCheckResults reads the newest results.json, nulls when absent ──
+const checksRoot = join(temp, "checks");
+mkdirSync(join(checksRoot, "spec-review", "run-a"), { recursive: true });
+mkdirSync(join(checksRoot, "spec-review", "run-b"), { recursive: true });
+const resultsA = join(checksRoot, "spec-review", "run-a", "results.json");
+const resultsB = join(checksRoot, "spec-review", "run-b", "results.json");
+writeFileSync(resultsA, JSON.stringify({ unit: "passed" }));
+writeFileSync(resultsB, JSON.stringify({ unit: "failed" }));
+// Force a deterministic order: run-b is newer than run-a.
+const now = Date.now();
+utimesSync(resultsA, now / 1000, (now - 60_000) / 1000);
+utimesSync(resultsB, now / 1000, (now - 1_000) / 1000);
+assert.deepEqual(readCheckResults(checksRoot), { unit: "failed" });
+console.log("ok - readCheckResults returns the newest results.json");
+
+// Malformed and wrong-shape results.json → null.
+const badRoot = join(temp, "checks-bad");
+mkdirSync(badRoot, { recursive: true });
+writeFileSync(join(badRoot, "results.json"), "{ not json");
+assert.equal(readCheckResults(badRoot), null);
+writeFileSync(join(badRoot, "results.json"), JSON.stringify(["not", "an", "object"]));
+assert.equal(readCheckResults(badRoot), null);
+console.log("ok - readCheckResults nulls on malformed or wrong-shape results.json");
+
+// Absent results.json → null, and the `since` window filters stale results.
+assert.equal(readCheckResults(join(temp, "no-checks")), null);
+assert.deepEqual(readCheckResults(checksRoot, { since: now - 2000 }), { unit: "failed" });
+assert.equal(readCheckResults(checksRoot, { since: now + 1 }), null);
+assert.equal(readCheckResults(null), null);
+assert.equal(readCheckResults(""), null);
+console.log("ok - readCheckResults nulls when absent or outside the since window");
