@@ -156,16 +156,13 @@ export function readCheckResults(artifactsRoot, { since } = {}) {
   const files = findResultsFiles(artifactsRoot, bound);
   if (files.length === 0) return null;
   files.sort((a, b) => b.mtimeMs - a.mtimeMs);
-  for (const file of files) {
-    let parsed;
-    try {
-      parsed = JSON.parse(readFileSync(file.path, "utf-8"));
-    } catch {
-      continue;
-    }
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(files[0].path, "utf-8"));
+  } catch {
+    return null;
   }
-  return null;
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
 }
 
 /** Recursively collect `results.json` paths newer than (or at) `since`. */
