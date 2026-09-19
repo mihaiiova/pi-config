@@ -58,6 +58,16 @@ grep -Fq 'collectSubagentUsage(' "$source_file"
 grep -Fq 'subagentUsage' "$source_file"
 pass "reconciles context at lifecycle boundaries and records subagent usage"
 
+# Finalization enriches the record with workflow identity and check results,
+# and session start uses the native header timestamp for accurate startedAt.
+grep -Fq './workflow.mjs' "$source_file"
+grep -Fq 'detectWorkflow(' "$source_file"
+grep -Fq 'readCheckResults(' "$source_file"
+grep -Fq 'getHeader()' "$source_file"
+grep -Fq 'workflow' "$source_file"
+grep -Fq 'checkResults' "$source_file"
+pass "enriches records with workflow identity, check results, and header startedAt"
+
 # Session identity and provenance come from the native read-only session API.
 grep -Fq 'ctx.sessionManager.getSessionId()' "$source_file"
 grep -Fq 'ctx.sessionManager.getSessionFile()' "$source_file"

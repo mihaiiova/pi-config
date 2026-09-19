@@ -135,6 +135,8 @@ export function createSessionDocument(fields = {}) {
     summary: null,
     /** Concise outcome, only when reliably available. */
     outcome: null,
+    /** Lifecycle skill that drove the session, or null when undetectable. */
+    workflow: null,
     /** Resolved active spec (`{ number, title? }`), or null. */
     activeSpec: null,
     /** Resolved lifecycle phase, or null. */

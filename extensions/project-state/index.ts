@@ -23,10 +23,11 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { aggregateUsage, collectProvenance, collectSubagentUsage } from "./metadata.mjs";
+import { aggregateUsage, collectProvenance, collectSubagentUsage, readCheckResults } from "./metadata.mjs";
 import { formatCost, formatHistory, formatStatus } from "./presentation.mjs";
 import { deriveActiveSpec, parseChangedFiles, parseSpecPhase } from "./reconcile.mjs";
 import { createStateDocument } from "./schema.mjs";
+import { detectWorkflow } from "./workflow.mjs";
 import {
   createSession,
   finalizeSession,
@@ -172,6 +173,7 @@ export default function projectState(pi: ExtensionAPI) {
         sessionId: ctx.sessionManager.getSessionId(),
         cwd: ctx.cwd,
         piSessionFile: ctx.sessionManager.getSessionFile(),
+        startedAt: ctx.sessionManager.getHeader()?.timestamp ?? undefined,
       });
       currentSession.branch = branch;
       currentSession.activeSpec = activeSpec;
@@ -219,6 +221,10 @@ export default function projectState(pi: ExtensionAPI) {
         currentSession.subagentUsage = currentSession.piSessionFile
           ? collectSubagentUsage(dirname(currentSession.piSessionFile))
           : null;
+        currentSession.workflow = detectWorkflow(ctx.sessionManager.getEntries());
+        currentSession.checkResults = readCheckResults(join(piDir, "artifacts"), {
+          since: Date.parse(currentSession.startedAt ?? ""),
+        });
         currentSession.finalizedAt = new Date().toISOString();
         finalizeSession(piDir, currentSession);
 

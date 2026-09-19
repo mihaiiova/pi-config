@@ -88,6 +88,8 @@ assert.equal(session.sessionId, "abc-123");
 assert.deepEqual(session.changedFiles, []);
 assert.equal(session.summary, null);
 assert.equal(session.outcome, null);
+assert.equal(session.workflow, null);
+assert.equal(session.checkResults, null);
 assert.equal(session.usage, null);
 assert.deepEqual(session.provenance, {
   piConfigCommit: null,
