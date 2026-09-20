@@ -32,7 +32,9 @@ export function formatStatus(state, currentUsage) {
 
 /**
  * Render recent session records for `/session-history` as one line each:
- * date, spec, outcome, known cost, and a concise summary when present.
+ * date, spec, workflow, outcome, delegation roles, known cost, and a concise
+ * summary when present. A record with no workflow renders as `general`; old
+ * records without the new fields render unchanged.
  */
 export function formatHistory(records, { limit = 10 } = {}) {
   const list = (records ?? []).slice(0, limit);
@@ -41,12 +43,23 @@ export function formatHistory(records, { limit = 10 } = {}) {
     .map((r) => {
       const date = (r.finalizedAt ?? r.startedAt ?? "").slice(0, 10) || "-";
       const spec = r.activeSpec?.number ? `#${r.activeSpec.number}` : "-";
+      const workflow = r.workflow ?? "general";
       const outcome = r.outcome ?? "-";
       const cost = r.usage?.cost?.total != null ? `$${r.usage.cost.total.toFixed(4)}` : "-";
+      const subagents = renderSubagents(r.subagentUsage);
       const summary = r.summary ? ` — ${r.summary}` : "";
-      return `${date}  spec=${spec}  outcome=${outcome}  cost=${cost}${summary}`;
+      return `${date}  spec=${spec}  workflow=${workflow}  outcome=${outcome}  cost=${cost}  subagents=${subagents}${summary}`;
     })
     .join("\n");
+}
+
+/** Render each delegated agent as `role(status)`, or `-` when none. */
+function renderSubagents(usage) {
+  const agents = usage?.agents;
+  if (!Array.isArray(agents) || agents.length === 0) return "-";
+  return agents
+    .map((a) => `${a.agent ?? "?"}(${a.status ?? "?"})`)
+    .join(",");
 }
 
 /**

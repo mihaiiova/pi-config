@@ -33,7 +33,7 @@ One-time setup and a live dashboard frame the lifecycle, with spec work landing 
 - `/spec-status` — read-only dashboard: branches, lifecycle states, blockers, releasable work.
 - `/spec-cost` — report how much each spec skill cost (main agent + sub-agents).
 - `/session-status` — current local resume projection (branch/spec/phase) and session cost.
-- `/session-history` — recent finalized session records (date/spec/outcome/cost).
+- `/session-history` — recent finalized session records (date, spec, workflow, delegation roles, cost).
 - `/session-cost` — current, recent, and project-aggregate known session cost.
 
 Example (normal):

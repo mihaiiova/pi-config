@@ -49,11 +49,15 @@ inferred or fabricated.
   reachable), branch (from git), last finalized session id, known checks, and
   an update timestamp.
 - **Session record:** schema version, timestamps, resolved project context
-  (spec/phase/branch), concise summary/outcome (only when available — these
-  stay `null` until a summary source exists), changed files (git status
-  snapshot), aggregated main-agent usage, active parent model + thinking level,
-  subagent routing from `settings.json` `subagents.agentOverrides`, and a
-  provenance block.
+  (spec/phase/branch), the lifecycle `workflow` that drove the session (from
+  the session's own `/spec-*` command, `null` when none), concise
+  summary/outcome (only when available — these stay `null` until a summary
+  source exists), changed files (git status snapshot), check results (from
+  `run-checks.sh`'s `results.json`, `null` when none ran), aggregated
+  main-agent usage, active parent model + thinking level, per-agent subagent
+  usage (role, `status` from `exitCode`, actual `model`, and cost), subagent
+  routing from `settings.json` `subagents.agentOverrides`, and a provenance
+  block.
 - **Provenance:** pi-config commit SHA, installed Pi package version, Pi
   session-format version, product version (project `versionFile`), and a
   SHA-256 hash of the active `pi-config.json` + `settings.json` configuration
@@ -76,8 +80,8 @@ Four distinct version facts are represented separately:
 
 - `/session-status` — current projection: branch, spec, phase, pending work,
   last session, and current-session cost when known.
-- `/session-history` — recent finalized records: date, spec, outcome, known
-  cost, and a summary when present.
+- `/session-history` — recent finalized records: date, spec, workflow,
+  outcome, delegation roles, known cost, and a summary when present.
 - `/session-cost` — current session, recent sessions, and project-aggregate
   known cost. Sessions without reported cost are counted as gaps.
 

@@ -58,6 +58,37 @@ assert.ok(history.includes("cost=-"));
 assert.equal(formatHistory([]), "No recorded sessions yet.");
 console.log("ok - formatHistory renders date/spec/outcome/cost/summary and empty state");
 
+// ── 2b. History renders workflow and delegation roles, tolerating null ──
+const identityRecords = [
+  {
+    finalizedAt: "2026-09-18T14:00:00.000Z",
+    activeSpec: { number: 167 },
+    workflow: "spec-start",
+    usage: { cost: { total: 0.25 } },
+    subagentUsage: {
+      agents: [
+        { agent: "worker", status: "completed", model: "gpt-5", runs: 1, cost: 0.1 },
+        { agent: "reviewer", status: "failed", model: null, runs: 2, cost: 0.15 },
+      ],
+      totalCost: 0.25,
+    },
+  },
+  {
+    finalizedAt: "2026-09-17T10:00:00.000Z",
+    activeSpec: null,
+    workflow: null,
+    usage: null,
+    subagentUsage: null,
+  },
+];
+const identityHistory = formatHistory(identityRecords);
+assert.ok(identityHistory.includes("workflow=spec-start"));
+assert.ok(identityHistory.includes("worker(completed)"));
+assert.ok(identityHistory.includes("reviewer(failed)"));
+assert.ok(identityHistory.includes("workflow=general"));
+assert.ok(identityHistory.includes("subagents=-"));
+console.log("ok - formatHistory renders workflow and delegation roles and tolerates null");
+
 // ── 3. Cost: current, recent, and aggregate with unknown gaps ──
 const costRecords = [
   { usage: { cost: { total: 1.0 } } },

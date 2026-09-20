@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -10,6 +10,7 @@ import {
   readPiConfigCommit,
   collectProvenance,
   collectSubagentUsage,
+  readCheckResults,
 } from "../../extensions/project-state/metadata.mjs";
 
 const temp = mkdtempSync(join(tmpdir(), "project-state-meta-"));
@@ -138,15 +139,15 @@ const artDir = join(sessDir, "subagent-artifacts");
 mkdirSync(artDir, { recursive: true });
 writeFileSync(
   join(artDir, "a_meta.json"),
-  JSON.stringify({ agent: "reviewer", timestamp: 1, usage: { cost: 0.25 } }),
+  JSON.stringify({ agent: "reviewer", exitCode: 0, model: "gpt-4", timestamp: 1, usage: { cost: 0.25 } }),
 );
 writeFileSync(
   join(artDir, "b_meta.json"),
-  JSON.stringify({ agent: "reviewer", timestamp: 2, usage: { cost: 0.5 } }),
+  JSON.stringify({ agent: "reviewer", exitCode: 0, model: "gpt-4", timestamp: 2, usage: { cost: 0.5 } }),
 );
 writeFileSync(
   join(artDir, "c_meta.json"),
-  JSON.stringify({ agent: "worker", timestamp: 3, usage: { cost: 1.5 } }),
+  JSON.stringify({ agent: "worker", exitCode: 1, model: "gpt-5", timestamp: 3, usage: { cost: 1.5 } }),
 );
 writeFileSync(join(artDir, "ignored.txt"), "not a meta file");
 writeFileSync(join(artDir, "bad_meta.json"), "{ not json");
@@ -158,12 +159,82 @@ assert.equal(sub.totalCost, 0.25 + 0.5 + 1.5 + 0.1);
 const reviewer = sub.agents.find((a) => a.agent === "reviewer");
 assert.equal(reviewer.runs, 2);
 assert.equal(reviewer.cost, 0.75);
+assert.equal(reviewer.status, "completed");
+assert.equal(reviewer.model, "gpt-4");
+const worker = sub.agents.find((a) => a.agent === "worker");
+assert.equal(worker.runs, 1);
+assert.equal(worker.cost, 1.5);
+assert.equal(worker.status, "failed");
+assert.equal(worker.model, "gpt-5");
 const fallback = sub.agents.find((a) => a.agent === "subagent");
 assert.equal(fallback.runs, 1);
 assert.equal(fallback.cost, 0.1);
+assert.equal(fallback.status, null);
+assert.equal(fallback.model, null);
 
-assert.equal(collectSubagentUsage(join(temp, "no-sess")), null);
+// Conflicting models across runs resolve to null — null beats wrong.
+const conflictDir = join(temp, "sess-conflict");
+const conflictArt = join(conflictDir, "subagent-artifacts");
+mkdirSync(conflictArt, { recursive: true });
+writeFileSync(join(conflictArt, "x_meta.json"), JSON.stringify({ agent: "scout", exitCode: 0, model: "m-a", usage: { cost: 1 } }));
+writeFileSync(join(conflictArt, "y_meta.json"), JSON.stringify({ agent: "scout", exitCode: 0, model: "m-b", usage: { cost: 1 } }));
+const conflict = collectSubagentUsage(conflictDir);
+assert.equal(conflict.agents.length, 1);
+assert.equal(conflict.agents[0].status, "completed");
+assert.equal(conflict.agents[0].model, null);
+
+// Mixed non-zero + missing exitCode → "failed" (a known failure wins).
+const mixedDir = join(temp, "sess-mixed");
+const mixedArt = join(mixedDir, "subagent-artifacts");
+mkdirSync(mixedArt, { recursive: true });
+writeFileSync(join(mixedArt, "a_meta.json"), JSON.stringify({ agent: "worker", exitCode: 1, model: "m", usage: { cost: 1 } }));
+writeFileSync(join(mixedArt, "b_meta.json"), JSON.stringify({ agent: "worker", model: "m", usage: { cost: 1 } }));
+const mixed = collectSubagentUsage(mixedDir);
+assert.equal(mixed.agents.length, 1);
+assert.equal(mixed.agents[0].status, "failed");
+console.log("ok - collectSubagentUsage marks a known failure as failed despite a missing exitCode");
+
+assert.equal(collectSubagentUsage("no-sess"), null);
 assert.equal(collectSubagentUsage(null), null);
 assert.equal(collectSubagentUsage(undefined), null);
 assert.equal(collectSubagentUsage(""), null);
-console.log("ok - collectSubagentUsage aggregates per-agent cost and nulls when absent");
+console.log("ok - collectSubagentUsage aggregates per-agent status/model/cost and nulls when absent");
+
+// ── 9. readCheckResults reads the newest results.json, nulls when absent ──
+const checksRoot = join(temp, "checks");
+mkdirSync(join(checksRoot, "spec-review", "run-a"), { recursive: true });
+mkdirSync(join(checksRoot, "spec-review", "run-b"), { recursive: true });
+const resultsA = join(checksRoot, "spec-review", "run-a", "results.json");
+const resultsB = join(checksRoot, "spec-review", "run-b", "results.json");
+writeFileSync(resultsA, JSON.stringify({ unit: "passed" }));
+writeFileSync(resultsB, JSON.stringify({ unit: "failed" }));
+// Force a deterministic order: run-b is newer than run-a.
+const now = Date.now();
+utimesSync(resultsA, now / 1000, (now - 60_000) / 1000);
+utimesSync(resultsB, now / 1000, (now - 1_000) / 1000);
+assert.deepEqual(readCheckResults(checksRoot), { unit: "failed" });
+console.log("ok - readCheckResults returns the newest results.json");
+
+// Malformed and wrong-shape results.json → null.
+const badRoot = join(temp, "checks-bad");
+mkdirSync(badRoot, { recursive: true });
+writeFileSync(join(badRoot, "results.json"), "{ not json");
+assert.equal(readCheckResults(badRoot), null);
+writeFileSync(join(badRoot, "results.json"), JSON.stringify(["not", "an", "object"]));
+assert.equal(readCheckResults(badRoot), null);
+console.log("ok - readCheckResults nulls on malformed or wrong-shape results.json");
+
+// Values other than "passed"/"failed" → null (unrelated results.json files).
+writeFileSync(join(badRoot, "results.json"), JSON.stringify({ unit: "passed", extra: 42 }));
+assert.equal(readCheckResults(badRoot), null);
+writeFileSync(join(badRoot, "results.json"), JSON.stringify({ numFailedTests: 0 }));
+assert.equal(readCheckResults(badRoot), null);
+console.log("ok - readCheckResults nulls when a value is not passed/failed");
+
+// Absent results.json → null, and the `since` window filters stale results.
+assert.equal(readCheckResults(join(temp, "no-checks")), null);
+assert.deepEqual(readCheckResults(checksRoot, { since: now - 2000 }), { unit: "failed" });
+assert.equal(readCheckResults(checksRoot, { since: now + 1 }), null);
+assert.equal(readCheckResults(null), null);
+assert.equal(readCheckResults(""), null);
+console.log("ok - readCheckResults nulls when absent or outside the since window");

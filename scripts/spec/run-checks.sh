@@ -43,6 +43,17 @@ add_check() {
   commands+=("$command")
 }
 
+# Escape a string for inclusion as a JSON string literal.
+json_string() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
 while (($#)); do
   case "$1" in
     --settings)
@@ -90,6 +101,7 @@ artifacts_dir="$(cd "$artifacts_dir" && pwd -P)"
 echo "Verification logs: $artifacts_dir"
 
 failures=0
+declare -a results=()
 declare -A used_files=()
 for i in "${!names[@]}"; do
   name="${names[$i]}"
@@ -105,6 +117,7 @@ for i in "${!names[@]}"; do
 
   if bash -o pipefail -c "$command" -- >"$log" 2>&1; then
     printf 'PASS %s\n' "$name"
+    results+=("\"$(json_string "$name")\":\"passed\"")
   else
     status=$?
     failures=$((failures + 1))
@@ -112,8 +125,20 @@ for i in "${!names[@]}"; do
     echo "--- last 40 lines: $log ---"
     tail -n 40 -- "$log" || true
     echo "--- full log: $log ---"
+    results+=("\"$(json_string "$name")\":\"failed\"")
   fi
 done
+
+# Write the machine-readable per-check summary alongside the logs.
+{
+  printf '{'
+  sep=""
+  for part in "${results[@]}"; do
+    printf '%s%s' "$sep" "$part"
+    sep=","
+  done
+  printf '}\n'
+} > "$artifacts_dir/results.json"
 
 if ((failures)); then
   echo "Verification failed: $failures of ${#names[@]} checks failed. Logs: $artifacts_dir" >&2

@@ -47,16 +47,23 @@ export interface SessionRecord {
   finalizedAt: string | null;
   summary: string | null;
   outcome: string | null;
+  workflow: string | null;
   activeSpec: ActiveSpec | null;
   phase: string | null;
   branch: string | null;
   changedFiles: string[];
-  checkResults: Record<string, unknown> | null;
+  checkResults: Record<string, string> | null;
   usage: UsageTotals | null;
   model: { provider: string; model: string; thinkingLevel: string | null } | null;
   subagentModels: Record<string, unknown> | null;
   subagentUsage: {
-    agents: Array<{ agent: string; runs: number; cost: number }>;
+    agents: Array<{
+      agent: string;
+      runs: number;
+      cost: number;
+      status: "completed" | "failed" | null;
+      model: string | null;
+    }>;
     totalCost: number;
   } | null;
   provenance: SessionProvenance;
