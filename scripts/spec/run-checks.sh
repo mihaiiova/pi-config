@@ -102,7 +102,7 @@ echo "Verification logs: $artifacts_dir"
 
 failures=0
 declare -a results=()
-declare -A used_files=()
+declare -a used_files=()
 for i in "${!names[@]}"; do
   name="${names[$i]}"
   command="${commands[$i]}"
@@ -110,9 +110,21 @@ for i in "${!names[@]}"; do
   safe_name="${safe_name##_}"
   safe_name="${safe_name%%_}"
   [[ -n "$safe_name" ]] || safe_name="check"
-  count="${used_files[$safe_name]:-0}"
-  used_files[$safe_name]=$((count + 1))
-  [[ "$count" -eq 0 ]] || safe_name+="-$count"
+  base_name="$safe_name"
+  count=0
+  while :; do
+    used=false
+    for used_name in "${used_files[@]-}"; do
+      if [[ "$used_name" == "$safe_name" ]]; then
+        used=true
+        break
+      fi
+    done
+    [[ "$used" == false ]] && break
+    count=$((count + 1))
+    safe_name="$base_name-$count"
+  done
+  used_files+=("$safe_name")
   log="$artifacts_dir/$safe_name.log"
 
   if bash -o pipefail -c "$command" -- >"$log" 2>&1; then
